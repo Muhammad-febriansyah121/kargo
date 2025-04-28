@@ -11,19 +11,14 @@ export default function Index({ setting, auth }: Props) {
         <CustomerLayout auth={auth}>
             <section className="lg:pl-[250px]">
                 <div className="px-7 pt-10">
-                    Lorem, ipsum dolor sit amet consectetur adipisicing elit.
-                    Ipsa et in porro molestiae debitis veniam, eveniet iusto
-                    distinctio illo at possimus odit sint asperiores dignissimos
-                    nostrum aliquid dolores sed perspiciatis incidunt rerum!
-                    Soluta numquam a commodi ut, totam cumque pariatur unde
-                    laudantium animi perspiciatis delectus id odit sint, hic,
-                    sequi quasi minima sed laboriosam omnis expedita. Optio,
-                    nulla illum sunt mollitia culpa magnam voluptatem,
-                    accusantium veritatis accusamus quam suscipit minima fuga
-                    dolores consectetur veniam odio delectus saepe quaerat
-                    quidem nostrum vel. Commodi aperiam id dolor ab, cupiditate
-                    aut enim, rerum aliquam soluta, numquam cum ratione
-                    accusantium incidunt perferendis cumque doloribus.
+                    <div className="flex flex-col gap-3">
+                        <h3 className="font-bold text-2xl">Dashboard</h3>
+                        <p className="text-sm text-gray-500 max-w-xl">
+                            Selamat datang <strong>{auth.name}</strong> di{" "}
+                            {setting.site_name}. Anda dapat mengelola semua data
+                            yang terkait dengan akun Anda di sini.
+                        </p>
+                    </div>
                 </div>
             </section>
         </CustomerLayout>

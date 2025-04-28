@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\KurirController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -34,9 +36,17 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::post('/customers/sendbarang', [CustomerController::class, 'sendbarang'])->name('customers.sendbarang');
     Route::get('/customers/successPayment/{invoice_number}', [CustomerController::class, 'successPayment'])->name('customers.successPayment');
     Route::get('/customers/riwayatpengiriman', [CustomerController::class, 'riwayatpengiriman'])->name('customers.riwayatpengiriman');
+    Route::get('/customers/detailriwayatpengiriman/{invoice_number}', [CustomerController::class, 'detailriwayatpengiriman'])->name('customers.detailriwayatpengiriman');
     Route::get('/customers/profile', [CustomerController::class, 'profile'])->name('customers.profile');
+    Route::post('/customers/updateprofile', [CustomerController::class, 'updateprofile'])->name('customers.updateprofile');
+
+    //driver    
+    Route::get('/driver/home', [DriverController::class, 'index'])->name('driver.home');
 
 
+
+    //kurir
+    Route::get('/kurir/home', [KurirController::class, 'index'])->name('kurir.home');
 
 
     Route::post('/customers/logout', [CustomerController::class, 'logout'])->name('customers.logout');

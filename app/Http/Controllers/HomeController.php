@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
@@ -122,13 +123,16 @@ class HomeController extends Controller
         if ($check) {
             return to_route('daftar');
         }
-
+        $nomorTujuan = $request->phone;
+        if (Str::startsWith($nomorTujuan, '08')) {
+            $nomorTujuan = '62' . substr($nomorTujuan, 1);
+        }
         $q = new User();
         $q->name = $request->name;
         $q->email = $request->email;
         $q->password = Hash::make($request->password);
         $q->city_id = $request->city_id;
-        $q->phone = $request->phone;
+        $q->phone = $nomorTujuan;
         $q->address = $request->address;
         $q->gender = $request->gender;
         $q->role = "customer";
@@ -148,10 +152,16 @@ class HomeController extends Controller
 
     public function checklogin(Request $request)
     {
-        if (Auth::attempt(['email' => $request->email, 'password' => $request->password,  'role' => 'customer'])) {
+        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $request->session()->regenerate();
-            return to_route('customers.home');
+            if (Auth::user()->role === 'customer') {
+                return to_route('customers.home');
+            } else if (Auth::user()->role === 'kurir') {
+                return to_route('kurir.home');
+            } else if (Auth::user()->role === 'driver') {
+                return to_route('driver.home');
+            }
         }
-        return to_route('home.login')->withErrors(['email' => 'Email ini tidak terdaftar.']);
+        return to_route('home.login')->withErrors(['email' => 'Email atau password salah.']);
     }
 }

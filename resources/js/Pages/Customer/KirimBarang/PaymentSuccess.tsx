@@ -11,6 +11,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { TransactionType } from "@/types/transaction";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
     setting: SettingType;
@@ -55,7 +56,7 @@ export default function PaymentSuccess({ setting, auth, trx, barcode }: Props) {
                                 <TableRow>
                                     <TableHead>Barang</TableHead>
                                     <TableHead>Invoice</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead>Status Pembayaran</TableHead>
                                     <TableHead>Metode Pembayaran</TableHead>
                                     <TableHead className="text-right">
                                         Total
@@ -70,7 +71,21 @@ export default function PaymentSuccess({ setting, auth, trx, barcode }: Props) {
                                     <TableCell className="font-medium">
                                         {trx.invoice_number}
                                     </TableCell>
-                                    <TableCell>{trx.status}</TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            className={
+                                                trx.status === "cancel"
+                                                    ? "bg-red-500 text-white"
+                                                    : trx.status === "paid"
+                                                    ? "bg-blue-500 text-white"
+                                                    : trx.status === "pending"
+                                                    ? "bg-yellow-500 text-black"
+                                                    : "bg-gray-500 text-white" // Default jika status tidak ditemukan
+                                            }
+                                        >
+                                            {trx.status || "Unknown"}
+                                        </Badge>{" "}
+                                    </TableCell>
                                     <TableCell>{trx.payment_method}</TableCell>
                                     <TableCell className="text-right">
                                         {trx.amount.toLocaleString("id-ID", {
@@ -165,7 +180,7 @@ export default function PaymentSuccess({ setting, auth, trx, barcode }: Props) {
                                     )}
                                     <TableRow>
                                         <TableCell className="font-medium">
-                                            Status
+                                            Status Pengiriman
                                         </TableCell>
                                         <TableCell>
                                             {trx.shipping_order.status}

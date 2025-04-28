@@ -6,12 +6,14 @@ use App\Filament\Resources\DriverResource\Pages;
 use App\Filament\Resources\DriverResource\RelationManagers;
 use App\Models\Driver;
 use App\Models\User;
+use App\Models\WareHouse;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\Section as ComponentsSection;
 use Filament\Infolists\Components\TextEntry;
@@ -24,6 +26,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 
 class DriverResource extends Resource
@@ -42,7 +45,7 @@ class DriverResource extends Resource
                 Section::make()->schema([
                     TextInput::make('name')->required()->placeholder('Driver/Supir'),
                     TextInput::make('email')->required()->email()->placeholder('Email'),
-                    TextInput::make('password')->password()->required()->placeholder('Password'),
+                    TextInput::make('password')->password()->placeholder('Password'),
                     TextInput::make('phone')->required()->placeholder('Nomor Telepon'),
                     Select::make('city_id')
                         ->options(
@@ -58,6 +61,14 @@ class DriverResource extends Resource
                                 })
                         )
                         ->label('Kota')
+                        ->live()
+                        ->searchable()
+                        ->required(),
+                    Select::make('warehouse_id')
+                        ->options(fn(Get $get): Collection => WareHouse::query()
+                            ->where('city_id', (int) $get('city_id'))
+                            ->pluck('name', 'id'))
+                        ->label('Gudang')
                         ->searchable()
                         ->required(),
                     TextInput::make('address')->required()->placeholder('Alamat'),
@@ -144,6 +155,8 @@ class DriverResource extends Resource
                         TextEntry::make('city.kecamatan')->label('Kecamatan'),
                         TextEntry::make('city.kelurahan')->label('Kelurahan'),
                         TextEntry::make('city.postal_code')->label('Kode POS'),
+                        TextEntry::make('warehouse.name')->label('Gudang'),
+                        TextEntry::make('warehouse.address')->label('Alamat Gudang'),
                         TextEntry::make('address')->label('Alamat'),
                     ]
                 )->columnSpan(['lg' => 3])->columns(2),

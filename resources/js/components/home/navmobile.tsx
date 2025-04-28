@@ -145,7 +145,7 @@ export default function Navmobile() {
                     </Link>
 
                     <Link
-                        href="/home/register"
+                        href="/home/login"
                         className="bg-abuabu rounded-full px-5 py-2 text-sm font-semibold text-black shadow-lg duration-300 ease-in-out hover:shadow-gray-500"
                     >
                         Sign In

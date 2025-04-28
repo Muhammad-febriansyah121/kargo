@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ShippingOrder extends Model
 {
     protected $guarded = [];
-    protected $with = ['originCity', 'destinationCity', 'shippingRate', 'transaction'];
+    protected $with = ['originCity', 'destinationCity', 'shippingRate', 'transaction', 'courier'];
 
     // Model ShippingOrder.php
     public function originCity()
@@ -28,5 +28,15 @@ class ShippingOrder extends Model
     public function transaction()
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function courier()
+    {
+        return $this->belongsTo(User::class, 'courier_id');
+    }
+
+    public function trackingHistory()
+    {
+        return $this->hasMany(TrackingHistory::class);
     }
 }

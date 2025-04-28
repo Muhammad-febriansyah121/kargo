@@ -94,7 +94,13 @@ export default function Navbar({ setting }: Props) {
                         href="/home/register"
                         className="bg-biru rounded-full px-5 py-2 text-base font-semibold text-white shadow-lg duration-300 ease-in-out hover:shadow-gray-500"
                     >
-                        Daftar Sekarang
+                        Sign Up
+                    </Link>
+                    <Link
+                        href="/home/login"
+                        className="bg-white rounded-full px-5 py-2 text-base font-semibold text-biru shadow-lg duration-300 ease-in-out hover:shadow-gray-500"
+                    >
+                        Sign In
                     </Link>
                     {/* <Link
                         href="/home/register"

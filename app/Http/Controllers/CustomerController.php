@@ -8,13 +8,17 @@ use App\Models\ShippingOrder;
 use App\Models\ShippingRate;
 use App\Models\ShippingService;
 use App\Models\ShippingZone;
+use App\Models\TrackingHistory;
 use App\Models\Transaction;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Milon\Barcode\DNS1D;
 use Illuminate\Support\Str;
+use Picqer\Barcode\BarcodeGeneratorPNG;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class CustomerController extends Controller
@@ -86,14 +90,22 @@ class CustomerController extends Controller
 
         // Generate nomor tracking dan barcode
         $trackingNumber = 'INV' . now()->format('YmdHis') . Str::upper(Str::random(3));
-        $qrCode = base64_encode(QrCode::format('png')->size(200)->generate($trackingNumber));
+
+        // Generate barcode PNG image
+        $generator = new BarcodeGeneratorPNG();
+        $barcode = base64_encode($generator->getBarcode($trackingNumber, $generator::TYPE_CODE_128));
+
+        // Nomor tujuan pengiriman
         $nomorTujuan = $request->recipient_phone;
         if (Str::startsWith($nomorTujuan, '08')) {
             $nomorTujuan = '62' . substr($nomorTujuan, 1);
         }
+        $estimationDate = Carbon::now()->addDays($shippingRate->estimation_day_max)->format('Y-m-d');
+
+
         // Simpan order pengiriman
         $q = new ShippingOrder();
-        $q->barcode = $qrCode;
+        $q->barcode = $barcode;
         $q->tracking_number = $trackingNumber;
         $q->customer_id = $user->id;
         $q->origin_city_id = $user->city_id;
@@ -111,6 +123,7 @@ class CustomerController extends Controller
         $q->pickup_type = $request->pickup_type;
         $q->pickup_address = $request->pickup_address;
         $q->notes = $request->notes;
+        $q->estimation_date = $estimationDate;
         $q->save();
 
         // Buat transaksi
@@ -203,12 +216,54 @@ class CustomerController extends Controller
         return Inertia::render('Customer/RiwayatPengiriman/Index', compact('setting', 'auth', 'trx'));
     }
 
-    public function profile()
+    public function detailriwayatpengiriman($invoice_number)
     {
         $auth = Auth::user();
         $setting = Setting::first();
-        return Inertia::render('Customer/Profile/Index', compact('setting', 'auth'));
+        $trx = Transaction::where('invoice_number', $invoice_number)->first();
+        $tracking = TrackingHistory::where('shipping_order_id', $trx->shipping_order_id)->get();
+        return Inertia::render('Customer/RiwayatPengiriman/Detail', compact('setting', 'auth', 'trx', 'tracking'));
     }
+
+    public function profile()
+    {
+        $auth = Auth::user();
+        $user = User::find($auth->id);
+        $city = City::all();
+        $setting = Setting::first();
+        return Inertia::render('Customer/Profile/Index', compact('setting', 'auth', 'user', 'city'));
+    }
+
+    public function updateprofile(Request $request)
+    {
+        $request->validate([
+            'image' => 'nullable|image|mimes:jpg,png,jpeg,gif,svg|max:3048',
+        ]);
+        $user = User::findOrFail(Auth::user()->id);
+        if ($request->file('image')) {
+            $filename = $request->image->store('profile', 'public');
+            $user->image = $filename;
+        }
+        $nomorTujuan = $request->phone;
+        if (Str::startsWith($nomorTujuan, '08')) {
+            $nomorTujuan = '62' . substr($nomorTujuan, 1);
+        }
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+        if ($request->has('password') && $request->password) {
+            $user->password = Hash::make($request->password);
+        }
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->city_id = $request->city_id;
+        $user->phone = $nomorTujuan;
+        $user->address = $request->address;
+        $user->gender = $request->gender;
+        $user->role = "customer";
+        $user->save();
+    }
+
 
     public function logout(Request $request)
     {

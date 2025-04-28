@@ -31,4 +31,9 @@ class City extends Model
     {
         return $this->hasMany(ShippingOrder::class);
     }
+
+    public function warehouse()
+    {
+        return $this->hasMany(WareHouse::class);
+    }
 }

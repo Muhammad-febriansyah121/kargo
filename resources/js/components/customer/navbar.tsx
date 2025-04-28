@@ -64,7 +64,11 @@ export default function NavbarCustomer({ setting, auth }: Props) {
                                     </div>
 
                                     <img
-                                        src="/images/default-avatar.svg"
+                                        src={
+                                            auth.image
+                                                ? `/storage/${auth.image}`
+                                                : "/images/default.png"
+                                        }
                                         alt="Avatar"
                                         className="h-[40px] w-[40px] md:h-[50px] md:w-[50px] rounded-full object-cover"
                                     />
