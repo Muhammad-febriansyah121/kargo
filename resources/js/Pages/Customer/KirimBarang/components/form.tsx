@@ -390,16 +390,13 @@ export default function FormKirimBarang({ city, service, auth }: Props) {
                                             {city.map((item) => (
                                                 <CommandItem
                                                     key={item.id}
-                                                    value={item.id.toString()}
-                                                    onSelect={(value) => {
-                                                        const id =
-                                                            parseInt(value);
-                                                        setSelectedId(id);
+                                                    onSelect={() => {
+                                                        setSelectedId(item.id);
 
                                                         setData((prevData) => ({
                                                             ...prevData,
                                                             destination_city_id:
-                                                                id.toString(), // karena data awal kamu semua string
+                                                                item.id.toString(),
                                                         }));
 
                                                         setOpen(false);

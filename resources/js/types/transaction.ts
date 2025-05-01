@@ -34,7 +34,7 @@ export interface ShippingOrder {
     recipient_address: string;
     payment_method: string;
     status: string;
-    estimation_date: null;
+    estimation_date: Date;
     notes: string;
     delivery_proof: null;
     created_at: Date;

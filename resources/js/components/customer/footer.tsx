@@ -34,8 +34,8 @@ export default function FooterCustomer({ setting, auth }: Props) {
                             <span
                                 className={
                                     currentUrl === item.url
-                                        ? "text-white text-sm font-semibold"
-                                        : "text-black text-sm font-medium"
+                                        ? "text-white text-sm text-center font-semibold"
+                                        : "text-black text-sm text-center font-medium"
                                 }
                             >
                                 {item.name}

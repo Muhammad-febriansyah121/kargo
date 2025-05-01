@@ -96,8 +96,8 @@ class TransactionResource extends Resource
                 TextColumn::make('No')->rowIndex()->toggleable(),
                 ImageColumn::make('ShippingOrder.barcode')
                     ->label('Barcode')
-                    ->getStateUsing(fn($record) => 'data:image/png;base64,' . $record->ShippingOrder->barcode)
-                    ->toggleable()->width('200px')->height('120px'),
+                    ->getStateUsing(fn($record) => asset('' . $record->ShippingOrder->barcode))
+                    ->toggleable()->width('200px')->height('150px'),
                 TextColumn::make('invoice_number')->label('Resi')->toggleable(),
                 TextColumn::make('user.name')->label('Customer')->searchable(),
                 TextColumn::make('ShippingOrder.nama_barang')->label('Barang')->toggleable(),
@@ -186,7 +186,6 @@ class TransactionResource extends Resource
                             ->searchable()
                             ->afterStateUpdated(fn(callable $set) => $set('courier_id', null))
                             ->required(),
-
                         Select::make('courier_id')
                             ->label('Pilih Kurir')
                             ->required()
@@ -200,27 +199,135 @@ class TransactionResource extends Resource
                                     ->toArray()
                                     : [];
                             }),
-
                     ])
                     ->action(function (array $data, Transaction $trx): void {
                         $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
-                        $shippingOrder->courier_id = $data['courier_id'];
-                        $shippingOrder->status = 'pickup';
+                        $shippingOrder->pickup_courier_id = $data['courier_id'];
+                        $shippingOrder->status = 'in_transit';
                         $shippingOrder->save();
-                        $kurir = User::findOrFail($shippingOrder->courier_id);
+                        $kurir = User::findOrFail($shippingOrder->pickup_courier_id);
                         $tracking = new TrackingHistory();
                         $tracking->shipping_order_id = $shippingOrder->id;
-                        $tracking->courier_id = $shippingOrder->courier_id;
-                        $tracking->status = 'picked';
+                        $tracking->user_id = $shippingOrder->pickup_courier_id;
+                        $tracking->status = 'in_transit';
                         $tracking->description = "paket di PICK UP Oleh kurir {$kurir->name} - {$kurir->phone} menuju gudang sortir";
                         $tracking->save();
-
                         Notification::make()
                             ->title('Kurir berhasil dipilih!')
                             ->success()
                             ->send();
                     })
-                    ->visible(fn($record) => $record->ShippingOrder->courier_id === null)
+                    ->visible(fn($record) => $record->ShippingOrder->pickup_courier_id === null && $record->ShippingOrder->pickup_type === 'pickup')
+                    ->modalAlignment(Alignment::Center),
+
+                Action::make('pilihDriver')
+                    ->button()
+                    ->color('success')
+                    ->label('Pilih Driver')->icon('heroicon-o-truck')
+                    ->form([
+                        Select::make('city_id')
+                            ->options(
+                                \App\Models\City::all()->mapWithKeys(fn($city) => [
+                                    $city->id => $city->provinsi . ' - ' .
+                                        $city->kota . ' - ' .
+                                        $city->kecamatan . ' - ' .
+                                        $city->kelurahan . ' - ' .
+                                        $city->postal_code,
+                                ])
+                            )
+                            ->live()
+                            ->label('Pilih Driver By Kecamatan')
+                            ->searchable()
+                            ->afterStateUpdated(fn(callable $set) => $set('driver_id', null))
+                            ->required(),
+                        Select::make('driver_id')
+                            ->label('Pilih Driver')
+                            ->required()
+                            ->searchable()
+                            ->options(function (Get $get): array {
+                                $cityId = $get('city_id');
+                                return $cityId
+                                    ? User::where('role', 'driver')
+                                    ->where('city_id', $cityId)
+                                    ->pluck('name', 'id')
+                                    ->toArray()
+                                    : [];
+                            }),
+                    ])
+                    ->action(function (array $data, Transaction $trx): void {
+                        $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
+                        $shippingOrder->pickup_courier_id = $data['driver_id'];
+                        $shippingOrder->status = 'to_destination_warehouse';
+                        $shippingOrder->save();
+                        $driver = User::findOrFail($shippingOrder->driver_id);
+                        $tracking = new TrackingHistory();
+                        $tracking->shipping_order_id = $shippingOrder->id;
+                        $tracking->user_id = $shippingOrder->driver_id;
+                        $tracking->status = 'to_destination_warehouse';
+                        $tracking->description = "Paket sedang dikirim menuju gudang kecamatan tujuan oleh driver {$driver->name} ({$driver->phone})";
+                        $tracking->save();
+
+                        Notification::make()
+                            ->title('Driver berhasil dipilih!')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn($record) => $record->ShippingOrder->driver_id === null)
+                    ->modalAlignment(Alignment::Center),
+
+                Action::make('deliveryCourier_id')
+                    ->button()
+                    ->color('warning')
+                    ->label('Pilih Kurir Pengantar')->icon('heroicon-o-truck')
+                    ->form([
+                        Select::make('city_id')
+                            ->options(
+                                \App\Models\City::all()->mapWithKeys(fn($city) => [
+                                    $city->id => $city->provinsi . ' - ' .
+                                        $city->kota . ' - ' .
+                                        $city->kecamatan . ' - ' .
+                                        $city->kelurahan . ' - ' .
+                                        $city->postal_code,
+                                ])
+                            )
+                            ->live()
+                            ->label('Pilih Kurir By Kecamatan')
+                            ->searchable()
+                            ->afterStateUpdated(fn(callable $set) => $set('deliveryCourier_id', null))
+                            ->required(),
+                        Select::make('deliveryCourier_id')
+                            ->label('Pilih Kurir')
+                            ->required()
+                            ->searchable()
+                            ->options(function (Get $get): array {
+                                $cityId = $get('city_id');
+                                return $cityId
+                                    ? User::where('role', 'driver')
+                                    ->where('city_id', $cityId)
+                                    ->pluck('name', 'id')
+                                    ->toArray()
+                                    : [];
+                            }),
+                    ])
+                    ->action(function (array $data, Transaction $trx): void {
+                        $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
+                        $shippingOrder->delivery_courier_id = $data['deliveryCourier_id'];
+                        $shippingOrder->status = 'to_destination_warehouse';
+                        $shippingOrder->save();
+                        $driver = User::findOrFail($shippingOrder->deliveryCourier_id);
+                        $tracking = new TrackingHistory();
+                        $tracking->shipping_order_id = $shippingOrder->id;
+                        $tracking->user_id = $shippingOrder->deliveryCourier_id;
+                        $tracking->status = 'to_destination_warehouse';
+                        $tracking->description = "Paket sedang dikirim menuju gudang kecamatan tujuan oleh driver {$driver->name} ({$driver->phone})";
+                        $tracking->save();
+
+                        Notification::make()
+                            ->title('Driver berhasil dipilih!')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn($record) => $record->ShippingOrder->delivery_courier_id === null)
                     ->modalAlignment(Alignment::Center)
 
             ])
@@ -243,7 +350,11 @@ class TransactionResource extends Resource
             ->schema([
                 Section::make()
                     ->schema([
-                        ImageEntry::make('ShippingOrder.barcode')->label('Barcode')->width('100%')->height('100%')->getStateUsing(fn($record) => 'data:image/png;base64,' . $record->ShippingOrder->barcode),
+                        ImageEntry::make('ShippingOrder.barcode')
+                            ->label('Barcode')
+                            ->width('100%')
+                            ->height('100%')
+                            ->getStateUsing(fn($record) => asset('' . $record->ShippingOrder->barcode)),
                     ]),
                 Section::make('Detail Transaksi')
                     ->schema([
@@ -313,6 +424,7 @@ class TransactionResource extends Resource
                             return match ($state) {
                                 'pending' => 'warning',
                                 'pickup' => 'info',
+                                'dropoff' => 'info',
                                 'in_transit' => 'success',
                                 'delivered' => 'danger',
                                 'cancelled' => 'secondary',

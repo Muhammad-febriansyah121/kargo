@@ -145,7 +145,7 @@ class DriverResource extends Resource
                 )->columnSpan(['lg' => 2])->columns(2),
                 ComponentsSection::make()->schema(
                     [
-                        ImageEntry::make('image')->label('Foto')->width('100%')->height('120px')->circular(),
+                        ImageEntry::make('image')->label('Foto')->width('100%')->height('100%')->circular()->alignCenter(),
                     ]
                 )->columnSpan(['lg' => 1]),
                 ComponentsSection::make()->schema(

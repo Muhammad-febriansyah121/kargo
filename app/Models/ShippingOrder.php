@@ -35,6 +35,17 @@ class ShippingOrder extends Model
         return $this->belongsTo(User::class, 'courier_id');
     }
 
+    public function pickupCourier()
+    {
+        return $this->belongsTo(User::class, 'pickup_courier_id');
+    }
+
+    public function deliveryCourier()
+    {
+        return $this->belongsTo(User::class, 'delivery_courier_id');
+    }
+
+
     public function trackingHistory()
     {
         return $this->hasMany(TrackingHistory::class);

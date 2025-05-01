@@ -44,7 +44,7 @@ export default function PaymentSuccess({ setting, auth, trx, barcode }: Props) {
                         </div>
                         {trx?.shipping_order?.barcode && (
                             <img
-                                src={`data:image/png;base64,${trx.shipping_order.barcode}`}
+                                src={`/${trx.shipping_order.barcode}`}
                                 alt="QR Code"
                                 className="max-w-xs mx-auto mt-10 mb-5 object-cover"
                             />
@@ -58,6 +58,7 @@ export default function PaymentSuccess({ setting, auth, trx, barcode }: Props) {
                                     <TableHead>Invoice</TableHead>
                                     <TableHead>Status Pembayaran</TableHead>
                                     <TableHead>Metode Pembayaran</TableHead>
+                                    <TableHead>Estimasi Pengiriman</TableHead>
                                     <TableHead className="text-right">
                                         Total
                                     </TableHead>
@@ -87,6 +88,15 @@ export default function PaymentSuccess({ setting, auth, trx, barcode }: Props) {
                                         </Badge>{" "}
                                     </TableCell>
                                     <TableCell>{trx.payment_method}</TableCell>
+                                    <TableCell>
+                                        {new Date(
+                                            trx.shipping_order.estimation_date
+                                        ).toLocaleDateString("id-ID", {
+                                            year: "numeric",
+                                            month: "2-digit",
+                                            day: "2-digit",
+                                        })}
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         {trx.amount.toLocaleString("id-ID", {
                                             style: "currency",

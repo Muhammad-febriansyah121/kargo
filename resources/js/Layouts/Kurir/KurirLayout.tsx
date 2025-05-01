@@ -1,8 +1,9 @@
 import FooterCustomer from "@/components/customer/footer";
 import NavbarCustomer from "@/components/customer/navbar";
 import Sidebar from "@/components/customer/sidebar";
-import Footer from "@/components/home/footer";
-import Navbar from "@/components/home/navbar";
+import FooterKurir from "@/components/kurir/footer";
+import NavbarKurir from "@/components/kurir/navbar";
+import SidebarKurir from "@/components/kurir/sidebar";
 import { SettingType } from "@/types/setting";
 import { UserType } from "@/types/user";
 import { Head, usePage } from "@inertiajs/react";
@@ -33,11 +34,11 @@ export default function KurirLayout({ children, auth }: Props) {
                 />
             </Head>
             <div className="flex flex-row justify-start">
-                <Sidebar setting={setting} />
+                <SidebarKurir setting={setting} />
                 <div className="flex flex-col mb-5 overflow-hidden">
-                    <NavbarCustomer setting={setting} auth={auth} />
+                    <NavbarKurir setting={setting} auth={auth} />
                     <main>{children}</main>
-                    <FooterCustomer setting={setting} auth={auth} />
+                    <FooterKurir setting={setting} auth={auth} />
                 </div>
             </div>
         </>

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TransactionType } from "@/types/transaction";
 import { Link } from "@inertiajs/react";
+import { Download } from "lucide-react";
 
 interface Props {
     trx: TransactionType[];
@@ -27,6 +28,7 @@ export default function TableRiwayat({ trx }: Props) {
                     <TableHead>Resi</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Status Pembayaran</TableHead>
+                    <TableHead>Metode Pengiriman</TableHead>
                     <TableHead>Tgl Transaksi</TableHead>
                     <TableHead>Aksi</TableHead>
                 </TableRow>
@@ -37,9 +39,9 @@ export default function TableRiwayat({ trx }: Props) {
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>
                             <img
-                                src={`data:image/png;base64,${item.shipping_order.barcode}`}
+                                src={`/${item.shipping_order.barcode}`}
                                 alt="QR Code"
-                                className="max-w-xs w-full h-14 mx-auto mt-10 mb-5 object-cover"
+                                className="max-w-xs w-full h-24 mx-auto mt-10 mb-5 object-cover"
                             />
                         </TableCell>
                         <TableCell>{item.invoice_number || "N/A"}</TableCell>
@@ -67,6 +69,20 @@ export default function TableRiwayat({ trx }: Props) {
                             </Badge>{" "}
                         </TableCell>
                         <TableCell>
+                            <Badge
+                                className={
+                                    item.shipping_order.pickup_type === "pickup"
+                                        ? "bg-amber-500 text-white"
+                                        : item.shipping_order.pickup_type ===
+                                          "dropoff"
+                                        ? "bg-teal-500 text-white"
+                                        : "bg-gray-300 text-black" // Default jika tidak pickup atau dropoff
+                                }
+                            >
+                                {item.shipping_order.pickup_type}
+                            </Badge>
+                        </TableCell>
+                        <TableCell>
                             {item.created_at
                                 ? new Date(item.created_at).toLocaleDateString(
                                       "id-ID",
@@ -78,7 +94,7 @@ export default function TableRiwayat({ trx }: Props) {
                                   )
                                 : "N/A"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="flex gap-2">
                             <Link
                                 href={`/customers/detailriwayatpengiriman/${item.invoice_number}`}
                             >
@@ -105,6 +121,14 @@ export default function TableRiwayat({ trx }: Props) {
                                     </svg>
                                 </Button>
                             </Link>
+                            <a
+                                href={`/customers/downloadBarcode/${item.invoice_number}`}
+                                target="_blank"
+                            >
+                                <Button className="bg-biru">
+                                    <Download size={20} />
+                                </Button>
+                            </a>
                         </TableCell>
                     </TableRow>
                 ))}

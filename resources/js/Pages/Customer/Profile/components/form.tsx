@@ -54,11 +54,12 @@ export default function FormProfile({ city, user }: Props) {
             password: "",
             phone: user.phone ?? "",
             store: user.store ?? "",
-            city_id: user.city_id ?? "",
+            city_id: user.city_id ? String(user.city_id) : "",
             address: user.address ?? "",
             gender: user.gender ?? "",
             vehicle_type: user.vehicle_type ?? "", // add this line
             vehicle_number: user.vehicle_number ?? "", // add this line
+            warehouse_id: user.warehouse_id ? String(user.warehouse_id) : "",
             role: user.role, // add this line
             image: null,
         });
@@ -67,10 +68,14 @@ export default function FormProfile({ city, user }: Props) {
         e.preventDefault();
         post(route("customers.updateprofile"), {
             onSuccess: () => {
-                Inertia.reload();
                 toast.success("Profile berhasil diperbarui!", {
                     position: "top-right",
                 });
+
+                // Tunggu 1 detik supaya toast muncul dulu
+                setTimeout(() => {
+                    Inertia.reload();
+                }, 2000);
             },
             onError: (errors) => {
                 console.log(errors);
@@ -80,6 +85,7 @@ export default function FormProfile({ city, user }: Props) {
             },
         });
     };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files ? e.target.files[0] : null;
         if (file) {
@@ -218,13 +224,13 @@ export default function FormProfile({ city, user }: Props) {
                                             {city.map((item) => (
                                                 <CommandItem
                                                     key={item.id}
-                                                    value={item.id.toString()}
+                                                    value={`${item.provinsi} ${item.kota} ${item.kecamatan} ${item.kelurahan} ${item.postal_code}`}
                                                     onSelect={() => {
                                                         setSelectedId(item.id);
                                                         setData(
                                                             "city_id",
                                                             item.id.toString()
-                                                        ); // ← Tambahkan ini
+                                                        );
                                                         setOpen(false);
                                                     }}
                                                 >

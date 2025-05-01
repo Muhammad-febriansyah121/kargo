@@ -11,10 +11,12 @@ use App\Models\ShippingZone;
 use App\Models\TrackingHistory;
 use App\Models\Transaction;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Milon\Barcode\DNS1D;
 use Illuminate\Support\Str;
@@ -46,12 +48,10 @@ class CustomerController extends Controller
         $originCity = City::find($user->city_id);
         $destinationCity = City::find($request->destination_city_id);
 
-        // Cek validitas kota asal dan tujuan
         if (!$originCity || !$destinationCity) {
             return response()->json(['error' => 'Kota asal atau tujuan tidak valid.'], 400);
         }
 
-        // Ambil zona pengiriman yang sesuai
         $shippingZone = ShippingZone::where('origin_city_id', $originCity->id)
             ->where('destination_city_id', $destinationCity->id)
             ->first();
@@ -60,52 +60,51 @@ class CustomerController extends Controller
             return response()->json(['error' => 'Tidak ada zona pengiriman untuk kota ini.'], 400);
         }
 
-        // Ambil tarif pengiriman berdasarkan zona dan layanan
         $shippingRate = ShippingRate::where('shipping_zone_id', $shippingZone->id)
             ->where('shipping_service_id', $request->shipping_service_id)
             ->first();
+
         if (!$shippingRate) {
             return response()->json(['error' => 'Tidak ada tarif pengiriman untuk layanan ini.'], 400);
         }
 
-        // Konversi panjang, lebar, dan tinggi ke meter jika input dalam cm
-        $panjang = $request->panjang / 100; // Konversi cm ke meter
-        $lebar = $request->lebar / 100; // Konversi cm ke meter
-        $tinggi = $request->tinggi / 100; // Konversi cm ke meter
-
-        // Perhitungan volume
+        $panjang = $request->panjang / 100;
+        $lebar = $request->lebar / 100;
+        $tinggi = $request->tinggi / 100;
         $volume = $panjang * $lebar * $tinggi;
 
-        // Perhitungan biaya pengiriman berdasarkan berat dan volume
         $weightCost = $request->berat * $shippingRate->price_per_kg;
         $volumeCost = $volume * $shippingRate->price_per_volume;
-
-        // Tentukan biaya pengiriman yang lebih besar antara biaya berdasarkan berat atau volume
         $shippingCost = max($weightCost, $volumeCost);
 
-        // Pastikan biaya pengiriman tidak lebih rendah dari minimum yang ditentukan
         if ($shippingRate->min_price) {
             $shippingCost = max($shippingCost, $shippingRate->min_price);
         }
 
-        // Generate nomor tracking dan barcode
         $trackingNumber = 'INV' . now()->format('YmdHis') . Str::upper(Str::random(3));
 
-        // Generate barcode PNG image
-        $generator = new BarcodeGeneratorPNG();
-        $barcode = base64_encode($generator->getBarcode($trackingNumber, $generator::TYPE_CODE_128));
+        // === Generate QR Code ===
+        $filename = $trackingNumber . '.png';
+        $qrPath = 'qrcodes/' . $filename;
+        Storage::disk('public')->makeDirectory('qrcodes');
 
-        // Nomor tujuan pengiriman
+        $qrImage = QrCode::format('png')
+            ->size(300)
+            ->errorCorrection('H')
+            ->margin(4) // penting: quiet zone agar mudah discan
+            ->generate($trackingNumber);
+
+        Storage::disk('public')->put($qrPath, $qrImage);
+
         $nomorTujuan = $request->recipient_phone;
         if (Str::startsWith($nomorTujuan, '08')) {
             $nomorTujuan = '62' . substr($nomorTujuan, 1);
         }
+
         $estimationDate = Carbon::now()->addDays($shippingRate->estimation_day_max)->format('Y-m-d');
 
-
-        // Simpan order pengiriman
         $q = new ShippingOrder();
-        $q->barcode = $barcode;
+        $q->barcode = 'storage/' . $qrPath;
         $q->tracking_number = $trackingNumber;
         $q->customer_id = $user->id;
         $q->origin_city_id = $user->city_id;
@@ -126,16 +125,14 @@ class CustomerController extends Controller
         $q->estimation_date = $estimationDate;
         $q->save();
 
-        // Buat transaksi
         $trx = new Transaction();
         $trx->user_id = $user->id;
         $trx->shipping_order_id = $q->id;
         $trx->invoice_number = $trackingNumber;
         $trx->payment_method = $request->payment_method;
         $trx->status = "pending";
-        $trx->amount = $shippingCost; // Gunakan biaya pengiriman yang sudah dihitung
+        $trx->amount = $shippingCost;
 
-        // Cek metode pembayaran dan proses transaksi dengan Midtrans jika transfer
         if ($request->payment_method === "transfer") {
             \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
             \Midtrans\Config::$clientKey = config('services.midtrans.client_key');
@@ -144,28 +141,24 @@ class CustomerController extends Controller
             \Midtrans\Config::$is3ds = config('services.midtrans.is_3ds');
             \Midtrans\Config::$overrideNotifUrl = config('app.url') . '/api/midtrans-callback';
 
-            // Detail transaksi
-            $item_details = [
-                [
-                    'id' => $trx->id,
-                    'price' => $trx->amount,
-                    'quantity' => 1,
-                    'name' => $q->nama_barang,
-                    'category' => $shippingRate->shippingService->name,
-                ]
-            ];
+            $item_details = [[
+                'id' => $trx->id,
+                'price' => $trx->amount,
+                'quantity' => 1,
+                'name' => $q->nama_barang,
+                'category' => $shippingRate->shippingService->name,
+            ]];
 
             $transaction_details = [
                 'order_id' => 'INV' . now(),
                 'gross_amount' => $trx->amount,
             ];
 
-            // Detail pelanggan
             $customer_details = [
-                'first_name' => Auth::user()->name,
-                'email' => Auth::user()->email,
-                'phone' => Auth::user()->phone,
-                'address' => Auth::user()->address ?? 'Indonesia',
+                'first_name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address ?? 'Indonesia',
             ];
 
             $params = [
@@ -183,9 +176,9 @@ class CustomerController extends Controller
             $trx->save();
             return response()->json(['redirect_url' => $trx->payment_url]);
         }
-
-        return response()->json(['message' => 'Pesanan berhasil dibuat', 'shipping_cost' => $shippingCost]);
     }
+
+
 
     public function successPayment($invoice_number)
     {
@@ -215,6 +208,24 @@ class CustomerController extends Controller
         $trx = Transaction::where('user_id', $auth->id)->latest()->get();
         return Inertia::render('Customer/RiwayatPengiriman/Index', compact('setting', 'auth', 'trx'));
     }
+
+    public function downloadBarcode($invoice_number)
+    {
+        $setting = Setting::first();
+        $trx = Transaction::where('invoice_number', $invoice_number)->firstOrFail();
+
+        // Ubah ukuran barcode: lebar 1.5 dan tinggi 35px agar tidak terlalu panjang
+        $barcode = (new \Milon\Barcode\DNS1D)->getBarcodePNG($trx->invoice_number, 'C39', 1.5, 35);
+
+        // Ukuran kertas: 50mm x 90mm dalam satuan points (1 mm = 2.83465 pt)
+        $customPaper = [0, 0, 141.73, 255]; // width: 50mm (141.73 pt), height: 90mm (255 pt)
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf', compact('trx', 'barcode', 'setting'));
+        $pdf->setPaper($customPaper, 'portrait');
+
+        return $pdf->stream('resi-' . $trx->invoice_number . '.pdf');
+    }
+
 
     public function detailriwayatpengiriman($invoice_number)
     {
@@ -260,6 +271,7 @@ class CustomerController extends Controller
         $user->phone = $nomorTujuan;
         $user->address = $request->address;
         $user->gender = $request->gender;
+        $user->store = $request->store;
         $user->role = "customer";
         $user->save();
     }

@@ -1,8 +1,6 @@
-import FooterCustomer from "@/components/customer/footer";
-import NavbarCustomer from "@/components/customer/navbar";
-import Sidebar from "@/components/customer/sidebar";
-import Footer from "@/components/home/footer";
-import Navbar from "@/components/home/navbar";
+import FooterDriver from "@/components/driver/footer";
+import NavbarDriver from "@/components/driver/navbar";
+import SidebarDriver from "@/components/driver/sidebar";
 import { SettingType } from "@/types/setting";
 import { UserType } from "@/types/user";
 import { Head, usePage } from "@inertiajs/react";
@@ -16,7 +14,6 @@ interface SettingProps {
 }
 export default function DriverLayout({ children, auth }: Props) {
     const { setting } = usePage().props as unknown as SettingProps;
-
     return (
         <>
             <Head>
@@ -33,11 +30,11 @@ export default function DriverLayout({ children, auth }: Props) {
                 />
             </Head>
             <div className="flex flex-row justify-start">
-                <Sidebar setting={setting} />
+                <SidebarDriver setting={setting} />
                 <div className="flex flex-col mb-5 overflow-hidden">
-                    <NavbarCustomer setting={setting} auth={auth} />
+                    <NavbarDriver setting={setting} auth={auth} />
                     <main>{children}</main>
-                    <FooterCustomer setting={setting} auth={auth} />
+                    <FooterDriver setting={setting} auth={auth} />
                 </div>
             </div>
         </>

@@ -206,13 +206,13 @@ export default function FormRegister({ city, setting }: Props) {
                                         {city.map((item) => (
                                             <CommandItem
                                                 key={item.id}
-                                                value={item.id.toString()}
+                                                value={`${item.provinsi} ${item.kota} ${item.kecamatan} ${item.kelurahan} ${item.postal_code}`}
                                                 onSelect={() => {
                                                     setSelectedId(item.id);
                                                     setData(
                                                         "city_id",
                                                         item.id.toString()
-                                                    ); // ← Tambahkan ini
+                                                    );
                                                     setOpen(false);
                                                 }}
                                             >

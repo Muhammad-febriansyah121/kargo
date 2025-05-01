@@ -8,7 +8,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { router } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -67,7 +67,7 @@ export default function NavbarCustomer({ setting, auth }: Props) {
                                         src={
                                             auth.image
                                                 ? `/storage/${auth.image}`
-                                                : "/images/default.png"
+                                                : "/images/default-avatar.svg"
                                         }
                                         alt="Avatar"
                                         className="h-[40px] w-[40px] md:h-[50px] md:w-[50px] rounded-full object-cover"
@@ -80,7 +80,11 @@ export default function NavbarCustomer({ setting, auth }: Props) {
                                     {auth.name}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>My Profile</DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Link href={"/customers/profile"}>
+                                        My Profile
+                                    </Link>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleLogout}>
                                     Logout
                                 </DropdownMenuItem>

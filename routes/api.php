@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DriverController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,3 +17,5 @@ Route::get('/barcode/{tracking}', function ($tracking) {
         'image' => 'data:image/png;base64,' . $barcode
     ]);
 });
+
+Route::get('/find-tracking/{trackingNumber}', [DriverController::class, 'findByTracking']);

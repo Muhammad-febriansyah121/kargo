@@ -39,14 +39,24 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::get('/customers/detailriwayatpengiriman/{invoice_number}', [CustomerController::class, 'detailriwayatpengiriman'])->name('customers.detailriwayatpengiriman');
     Route::get('/customers/profile', [CustomerController::class, 'profile'])->name('customers.profile');
     Route::post('/customers/updateprofile', [CustomerController::class, 'updateprofile'])->name('customers.updateprofile');
+    Route::get('/customers/downloadBarcode/{invoice_number}', [CustomerController::class, 'downloadBarcode'])->name('customers.downloadBarcode');
 
     //driver    
     Route::get('/driver/home', [DriverController::class, 'index'])->name('driver.home');
-
+    Route::get('/driver/scan', [DriverController::class, 'scan'])->name('driver.scan');
+    Route::post('/scan-result', [DriverController::class, 'handle']);
+    Route::get('/driver/profile', [DriverController::class, 'profile'])->name('driver.profile');
+    Route::post('/driver/updateprofile', [DriverController::class, 'updateprofile'])->name('driver.updateprofile');
 
 
     //kurir
     Route::get('/kurir/home', [KurirController::class, 'index'])->name('kurir.home');
+    Route::get('/kurir/scan', [KurirController::class, 'scan'])->name('kurir.scan');
+    Route::get('/kurir/pengiriman', [KurirController::class, 'pengiriman'])->name('kurir.pengiriman');
+    Route::get('/kurir/detailpengiriman/{tracking_number}', [KurirController::class, 'detailpengiriman'])->name('kurir.detailpengiriman');
+    Route::post('/kurir/scan-result', [KurirController::class, 'handle']);
+    Route::get('/kurir/profile', [KurirController::class, 'profile'])->name('kurir.profile');
+    Route::post('/kurir/updateprofile', [KurirController::class, 'updateprofile'])->name('kurir.updateprofile');
 
 
     Route::post('/customers/logout', [CustomerController::class, 'logout'])->name('customers.logout');

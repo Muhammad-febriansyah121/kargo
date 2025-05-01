@@ -4,18 +4,20 @@ export interface UserType {
     id: number;
     name: string;
     email: string;
-    phone: string | null;
-    address: string | null;
-    city_id: number | null;
-    store: string | null;
-    gender: string | null;
-    vehicle_type: string | null;
-    vehicle_number: string | null;
+    phone: string;
+    address: string;
+    city_id: number;
+    store: null;
+    gender: string;
+    vehicle_type: null;
+    vehicle_number: null;
     role: string;
-    image: string | null; // as string URL atau path kalau dari backend
+    image: string;
     created_at: Date;
     updated_at: Date;
-    city: City | null;
+    warehouse_id: number;
+    city: City;
+    warehouse: Warehouse;
 }
 
 export interface City {
@@ -25,8 +27,19 @@ export interface City {
     kecamatan: string;
     kelurahan: string;
     postal_code: number;
-    created_at: Date | null;
-    updated_at: Date | null;
+    created_at: null;
+    updated_at: null;
+}
+
+export interface Warehouse {
+    id: number;
+    name: string;
+    city_id: number;
+    manager: string;
+    address: string;
+    created_at: Date;
+    updated_at: Date;
+    city: City;
 }
 
 // HANYA data yang perlu dikirim lewat form
@@ -35,11 +48,12 @@ export type ProfileFormData = {
     email: string;
     phone: number | string;
     address: string;
-    city_id: number | string; // penting: hanya city_id, bukan object city
+    city_id: string; // penting: hanya city_id, bukan object city
     store: string;
     gender: string;
     vehicle_type: string;
     vehicle_number: string;
+    warehouse_id: string;
     role: string; // kalau role diubah manual, kalau tidak, hapus juga ini
     image: File | null; // file baru upload
     password?: string; // opsional, misal update password
