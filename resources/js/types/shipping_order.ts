@@ -7,7 +7,9 @@ export interface ShippingOrderType {
     destination_city_id: number;
     shipping_rate_id: number;
     courier_id: null;
-    driver_id: null;
+    pickup_courier_id: number | null;
+    delivery_courier_id: number | null;
+    driver_id: number | null;
     tracking_number: string;
     barcode: string;
     nama_barang: string;
@@ -16,7 +18,7 @@ export interface ShippingOrderType {
     lebar: number;
     tinggi: number;
     pickup_type: string;
-    pickup_address: null;
+    pickup_address: null | string;
     recipient_name: string;
     recipient_phone: string;
     recipient_address: string;
@@ -28,22 +30,77 @@ export interface ShippingOrderType {
     created_at: Date;
     updated_at: Date;
     warehouse_id: null;
-    origin_city: NCity;
-    destination_city: NCity;
+    origin_city: City;
+    destination_city: City;
     shipping_rate: ShippingRate;
     transaction: null;
-    courier: null;
+    customer: Customer;
+    pickup_courier: Customer | null;
+    delivery_courier: Customer | null;
+    driver: Customer | null;
 }
 
-export interface NCity {
+export interface Customer {
     id: number;
-    provinsi: string;
-    kota: string;
-    kecamatan: string;
-    kelurahan: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city_id: number;
+    store: null | string;
+    gender: string;
+    vehicle_type: null | string;
+    vehicle_number: null | string;
+    role: string;
+    image: string;
+    created_at: Date;
+    updated_at: Date;
+    warehouse_id: number | null;
+    city: City;
+    warehouse: Warehouse | null;
+}
+
+export interface City {
+    id: number;
+    provinsi: Provinsi;
+    kota: Kota;
+    kecamatan: Kecamatan;
+    kelurahan: Kelurahan;
     postal_code: number;
     created_at: null;
     updated_at: null;
+}
+
+export enum Kecamatan {
+    Cibinong = "Cibinong",
+    DenpasarUtara = "Denpasar Utara",
+}
+
+export enum Kelurahan {
+    Pabuaran = "Pabuaran",
+    Peguyangan = "Peguyangan",
+    Ubung = "Ubung",
+}
+
+export enum Kota {
+    Denpasar = "Denpasar",
+    KabupatenBogor = "Kabupaten Bogor",
+}
+
+export enum Provinsi {
+    Bali = "Bali",
+    JawaBarat = "Jawa Barat",
+}
+
+export interface Warehouse {
+    id: number;
+    name: string;
+    city_id: number;
+    manager: string;
+    address: string;
+    created_at: Date;
+    updated_at: Date;
+    city: City;
 }
 
 export interface ShippingRate {
@@ -78,6 +135,6 @@ export interface ShippingZone {
     distance_km: number;
     created_at: Date;
     updated_at: Date;
-    origin_city: NCity;
-    destination_city: NCity;
+    origin_city: City;
+    destination_city: City;
 }

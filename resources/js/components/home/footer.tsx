@@ -77,20 +77,24 @@ export default function Footer({ setting }: Props) {
                         </div>
                         <div className="space-y-2">
                             <span className="text-gray-500 font-medium text-sm">
-                                Produk Layanan
+                                Quick Link
                             </span>
                             <ul className="space-y-2">
                                 <li className="text-sm font-semibold text-gray-500">
-                                    Reguler
+                                    <Link href={"/home/login"}>Login</Link>
                                 </li>
                                 <li className="text-sm font-semibold text-gray-500">
-                                    Best
+                                    <Link href={"/home/register"}>
+                                        Registrasi
+                                    </Link>
                                 </li>
                                 <li className="text-sm font-semibold text-gray-500">
-                                    Fast
+                                    <Link href={"/home/contact"}>
+                                        Kontak Kami
+                                    </Link>
                                 </li>
                                 <li className="text-sm font-semibold text-gray-500">
-                                    COD
+                                    <Link href={"/home/news"}>Berita</Link>
                                 </li>
                             </ul>
                         </div>
@@ -100,16 +104,22 @@ export default function Footer({ setting }: Props) {
                             </span>
                             <ul className=" space-y-2">
                                 <li className="text-sm font-semibold text-gray-500">
-                                    Faq
+                                    <Link href={"/home/faq"}>Faq</Link>
                                 </li>
                                 <li className="text-sm font-semibold text-gray-500">
-                                    Term & Condition
+                                    <Link href={"/home/term"}>
+                                        Term & Condition
+                                    </Link>
                                 </li>
                                 <li className="text-sm font-semibold text-gray-500">
-                                    Privacy Policy
+                                    <Link href={"/home/privacypolicy"}>
+                                        Privacy Policy
+                                    </Link>
                                 </li>
                                 <li className="text-sm font-semibold text-gray-500">
-                                    Definisi
+                                    <Link href={"/home/definisi"}>
+                                        Definisi
+                                    </Link>
                                 </li>
                             </ul>
                         </div>

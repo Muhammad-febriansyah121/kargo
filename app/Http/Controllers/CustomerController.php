@@ -29,7 +29,10 @@ class CustomerController extends Controller
     {
         $auth = Auth::user();
         $setting = Setting::first();
-        return Inertia::render('Customer/Home/Index', compact('setting', 'auth'));
+        $trx = Transaction::where('user_id', $auth->id)->latest()->count();
+        $sudahbayar = Transaction::where('user_id', $auth->id)->where('status', 'paid')->count();
+        $belumbayar = Transaction::where('user_id', $auth->id)->where('status', 'pending')->count();
+        return Inertia::render('Customer/Home/Index', compact('setting', 'auth', 'trx', 'sudahbayar', 'belumbayar'));
     }
 
     public function kirimbarang()
@@ -209,17 +212,21 @@ class CustomerController extends Controller
         return Inertia::render('Customer/RiwayatPengiriman/Index', compact('setting', 'auth', 'trx'));
     }
 
+    public function selesai($invoice_number)
+    {
+        $trx = ShippingOrder::where('tracking_number', $invoice_number)->first();
+        $trx->status = 'selesai';
+        $trx->save();
+        return to_route('customers.riwayatpengiriman');
+    }
+
+
     public function downloadBarcode($invoice_number)
     {
         $setting = Setting::first();
         $trx = Transaction::where('invoice_number', $invoice_number)->firstOrFail();
-
-        // Ubah ukuran barcode: lebar 1.5 dan tinggi 35px agar tidak terlalu panjang
         $barcode = (new \Milon\Barcode\DNS1D)->getBarcodePNG($trx->invoice_number, 'C39', 1.5, 35);
-
-        // Ukuran kertas: 50mm x 90mm dalam satuan points (1 mm = 2.83465 pt)
         $customPaper = [0, 0, 141.73, 255]; // width: 50mm (141.73 pt), height: 90mm (255 pt)
-
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf', compact('trx', 'barcode', 'setting'));
         $pdf->setPaper($customPaper, 'portrait');
 

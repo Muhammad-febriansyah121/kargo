@@ -15,6 +15,7 @@ import { NewsType } from "@/types/news";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@inertiajs/react";
 import News from "./components/news";
+import { ShippingZone } from "@/types/shipping_order";
 
 interface Props {
     setting: SettingType;
@@ -22,6 +23,7 @@ interface Props {
     sectionfitur: SectionFiturType;
     fitur: FiturType[];
     news: NewsType[];
+    city: ShippingZone[];
 }
 export default function Index({
     setting,
@@ -29,10 +31,11 @@ export default function Index({
     sectionfitur,
     fitur,
     news,
+    city,
 }: Props) {
     return (
         <HomeLayout>
-            <Hero setting={setting} />
+            <Hero setting={setting} city={city} />
             <section className="lg:pt-40 pt-[28rem] pb-20">
                 <MitraKami mitra={mitra} />
             </section>

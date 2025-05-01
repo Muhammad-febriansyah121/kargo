@@ -138,29 +138,54 @@ export default function DetailPengiriman({ all }: Props) {
                         </TableRow>
                     </TableBody>
                 </Table>
-                <Table className="shrink-0 border mt-10">
-                    <TableCaption>Informasi Penerima</TableCaption>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell className="font-medium">
-                                Penerima
-                            </TableCell>
-                            <TableCell>{all.recipient_name}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className="font-medium">
-                                Nomor Telepon
-                            </TableCell>
-                            <TableCell>{all.recipient_phone}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell className="font-medium">
-                                Alamat
-                            </TableCell>
-                            <TableCell>{all.recipient_address}</TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
+                <div>
+                    <Table className="shrink-0 border mt-10">
+                        <TableCaption>Informasi Pengirim</TableCaption>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell className="font-medium">
+                                    Nama
+                                </TableCell>
+                                <TableCell>{all.customer.name}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="font-medium">
+                                    Nomor Telepon
+                                </TableCell>
+                                <TableCell>{all.customer.phone}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="font-medium">
+                                    Alamat
+                                </TableCell>
+                                <TableCell>{all.customer.address}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                    <Table className="shrink-0 border mt-10">
+                        <TableCaption>Informasi Penerima</TableCaption>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell className="font-medium">
+                                    Penerima
+                                </TableCell>
+                                <TableCell>{all.recipient_name}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="font-medium">
+                                    Nomor Telepon
+                                </TableCell>
+                                <TableCell>{all.recipient_phone}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="font-medium">
+                                    Alamat
+                                </TableCell>
+                                <TableCell>{all.recipient_address}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </>
     );

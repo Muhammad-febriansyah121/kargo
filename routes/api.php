@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\KurirController;
+use App\Models\ShippingOrder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -17,5 +20,23 @@ Route::get('/barcode/{tracking}', function ($tracking) {
         'image' => 'data:image/png;base64,' . $barcode
     ]);
 });
+
+// Route::middleware('auth:sanctum')->group(function () {
+Route::get('/dropoff', [KurirController::class, 'pengantaran']);
+Route::get('/pickup', [KurirController::class, 'pickup']);
+// });
+
+Route::get('/api/cek-resi/{invoice_number}', function ($invoice_number) {
+    $trx = \App\Models\Transaction::where('invoice_number', $invoice_number)->first();
+
+    if (!$trx) {
+        return response()->json(['message' => 'Resi tidak ditemukan.'], 404);
+    }
+
+    return response()->json($trx);
+});
+
+
+
 
 Route::get('/find-tracking/{trackingNumber}', [DriverController::class, 'findByTracking']);

@@ -114,10 +114,15 @@ class TransactionResource extends Resource
                 TextColumn::make('ShippingOrder.status')
                     ->label('Status Pengiriman')->toggleable()->badge()->color(function (string $state): string {
                         return match ($state) {
-                            'pending' => 'warning',
+                            'order_baru' => 'warning',
                             'pickup' => 'info',
                             'in_transit' => 'success',
-                            'delivered' => 'danger',
+                            'dikirim' => 'success',
+                            'on_delivery' => 'success',
+                            'pengiriman_gudang' => 'success',
+                            'ready_for_delivery' => 'success',
+                            'delivered' => 'info',
+                            'selesai' => 'info',
                             'cancelled' => 'secondary',
                         };
                     }),
@@ -167,9 +172,30 @@ class TransactionResource extends Resource
                     }),
             ], layout: FiltersLayout::Modal)->actions([
                 Tables\Actions\ViewAction::make()->label('Detail')->icon('heroicon-s-eye')->button()->color('info'),
+                Action::make('printpdf')->button()->label('Print PDF')->icon('heroicon-s-printer')->color('danger')->url(fn($record) => route('customers.downloadBarcode', $record->invoice_number))->openUrlInNewTab(),
+                Action::make('ubahStatus')
+                    ->requiresConfirmation()
+                    ->button()
+                    ->color('info')
+                    ->label('Teruskan')
+                    ->icon('heroicon-s-check-circle')
+                    ->visible(fn($record): bool => $record->shippingOrder->status === 'dikirim' || $record->shippingOrder->status === 'pengiriman_gudang')
+                    ->action(function (Transaction $record) {
+                        $shippingOrder = ShippingOrder::where('tracking_number', $record->invoice_number)->first();
+                        if ($shippingOrder->status == 'dikirim') {
+                            $shippingOrder->status = 'on_delivery';
+                        } else {
+                            $shippingOrder->status = 'ready_for_delivery';
+                        }
+                        $shippingOrder->save();
+                        Notification::make()
+                            ->title('Data berhasil diperbarui!')
+                            ->success()
+                            ->send();
+                    }),
                 Action::make('updateCourier')
                     ->button()
-                    ->label('Pilih Kurir')->icon('heroicon-o-truck')
+                    ->label('Pilih Kurir PickUp')->icon('heroicon-o-truck')
                     ->form([
                         Select::make('city_id')
                             ->options(
@@ -203,13 +229,13 @@ class TransactionResource extends Resource
                     ->action(function (array $data, Transaction $trx): void {
                         $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
                         $shippingOrder->pickup_courier_id = $data['courier_id'];
-                        $shippingOrder->status = 'in_transit';
+                        $shippingOrder->status = 'pickup';
                         $shippingOrder->save();
                         $kurir = User::findOrFail($shippingOrder->pickup_courier_id);
                         $tracking = new TrackingHistory();
                         $tracking->shipping_order_id = $shippingOrder->id;
                         $tracking->user_id = $shippingOrder->pickup_courier_id;
-                        $tracking->status = 'in_transit';
+                        $tracking->status = 'pickup';
                         $tracking->description = "paket di PICK UP Oleh kurir {$kurir->name} - {$kurir->phone} menuju gudang sortir";
                         $tracking->save();
                         Notification::make()
@@ -220,115 +246,115 @@ class TransactionResource extends Resource
                     ->visible(fn($record) => $record->ShippingOrder->pickup_courier_id === null && $record->ShippingOrder->pickup_type === 'pickup')
                     ->modalAlignment(Alignment::Center),
 
-                Action::make('pilihDriver')
-                    ->button()
-                    ->color('success')
-                    ->label('Pilih Driver')->icon('heroicon-o-truck')
-                    ->form([
-                        Select::make('city_id')
-                            ->options(
-                                \App\Models\City::all()->mapWithKeys(fn($city) => [
-                                    $city->id => $city->provinsi . ' - ' .
-                                        $city->kota . ' - ' .
-                                        $city->kecamatan . ' - ' .
-                                        $city->kelurahan . ' - ' .
-                                        $city->postal_code,
-                                ])
-                            )
-                            ->live()
-                            ->label('Pilih Driver By Kecamatan')
-                            ->searchable()
-                            ->afterStateUpdated(fn(callable $set) => $set('driver_id', null))
-                            ->required(),
-                        Select::make('driver_id')
-                            ->label('Pilih Driver')
-                            ->required()
-                            ->searchable()
-                            ->options(function (Get $get): array {
-                                $cityId = $get('city_id');
-                                return $cityId
-                                    ? User::where('role', 'driver')
-                                    ->where('city_id', $cityId)
-                                    ->pluck('name', 'id')
-                                    ->toArray()
-                                    : [];
-                            }),
-                    ])
-                    ->action(function (array $data, Transaction $trx): void {
-                        $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
-                        $shippingOrder->pickup_courier_id = $data['driver_id'];
-                        $shippingOrder->status = 'to_destination_warehouse';
-                        $shippingOrder->save();
-                        $driver = User::findOrFail($shippingOrder->driver_id);
-                        $tracking = new TrackingHistory();
-                        $tracking->shipping_order_id = $shippingOrder->id;
-                        $tracking->user_id = $shippingOrder->driver_id;
-                        $tracking->status = 'to_destination_warehouse';
-                        $tracking->description = "Paket sedang dikirim menuju gudang kecamatan tujuan oleh driver {$driver->name} ({$driver->phone})";
-                        $tracking->save();
+                // Action::make('pilihDriver')
+                //     ->button()
+                //     ->color('success')
+                //     ->label('Pilih Driver')->icon('heroicon-o-truck')
+                //     ->form([
+                //         Select::make('city_id')
+                //             ->options(
+                //                 \App\Models\City::all()->mapWithKeys(fn($city) => [
+                //                     $city->id => $city->provinsi . ' - ' .
+                //                         $city->kota . ' - ' .
+                //                         $city->kecamatan . ' - ' .
+                //                         $city->kelurahan . ' - ' .
+                //                         $city->postal_code,
+                //                 ])
+                //             )
+                //             ->live()
+                //             ->label('Pilih Driver By Kecamatan')
+                //             ->searchable()
+                //             ->afterStateUpdated(fn(callable $set) => $set('driver_id', null))
+                //             ->required(),
+                //         Select::make('driver_id')
+                //             ->label('Pilih Driver')
+                //             ->required()
+                //             ->searchable()
+                //             ->options(function (Get $get): array {
+                //                 $cityId = $get('city_id');
+                //                 return $cityId
+                //                     ? User::where('role', 'driver')
+                //                     ->where('city_id', $cityId)
+                //                     ->pluck('name', 'id')
+                //                     ->toArray()
+                //                     : [];
+                //             }),
+                //     ])
+                //     ->action(function (array $data, Transaction $trx): void {
+                //         $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
+                //         $shippingOrder->driver_id = $data['driver_id'];
+                //         $shippingOrder->status = 'to_destination_warehouse';
+                //         $shippingOrder->save();
+                //         $driver = User::findOrFail($shippingOrder->driver_id);
+                //         $tracking = new TrackingHistory();
+                //         $tracking->shipping_order_id = $shippingOrder->id;
+                //         $tracking->user_id = $shippingOrder->driver_id;
+                //         $tracking->status = 'to_destination_warehouse';
+                //         $tracking->description = "Paket sedang dikirim menuju gudang kecamatan tujuan oleh driver {$driver->name} ({$driver->phone})";
+                //         $tracking->save();
 
-                        Notification::make()
-                            ->title('Driver berhasil dipilih!')
-                            ->success()
-                            ->send();
-                    })
-                    ->visible(fn($record) => $record->ShippingOrder->driver_id === null)
-                    ->modalAlignment(Alignment::Center),
+                //         Notification::make()
+                //             ->title('Driver berhasil dipilih!')
+                //             ->success()
+                //             ->send();
+                //     })
+                //     ->visible(fn($record) => $record->ShippingOrder->driver_id === null)
+                //     ->modalAlignment(Alignment::Center),
 
-                Action::make('deliveryCourier_id')
-                    ->button()
-                    ->color('warning')
-                    ->label('Pilih Kurir Pengantar')->icon('heroicon-o-truck')
-                    ->form([
-                        Select::make('city_id')
-                            ->options(
-                                \App\Models\City::all()->mapWithKeys(fn($city) => [
-                                    $city->id => $city->provinsi . ' - ' .
-                                        $city->kota . ' - ' .
-                                        $city->kecamatan . ' - ' .
-                                        $city->kelurahan . ' - ' .
-                                        $city->postal_code,
-                                ])
-                            )
-                            ->live()
-                            ->label('Pilih Kurir By Kecamatan')
-                            ->searchable()
-                            ->afterStateUpdated(fn(callable $set) => $set('deliveryCourier_id', null))
-                            ->required(),
-                        Select::make('deliveryCourier_id')
-                            ->label('Pilih Kurir')
-                            ->required()
-                            ->searchable()
-                            ->options(function (Get $get): array {
-                                $cityId = $get('city_id');
-                                return $cityId
-                                    ? User::where('role', 'driver')
-                                    ->where('city_id', $cityId)
-                                    ->pluck('name', 'id')
-                                    ->toArray()
-                                    : [];
-                            }),
-                    ])
-                    ->action(function (array $data, Transaction $trx): void {
-                        $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
-                        $shippingOrder->delivery_courier_id = $data['deliveryCourier_id'];
-                        $shippingOrder->status = 'to_destination_warehouse';
-                        $shippingOrder->save();
-                        $driver = User::findOrFail($shippingOrder->deliveryCourier_id);
-                        $tracking = new TrackingHistory();
-                        $tracking->shipping_order_id = $shippingOrder->id;
-                        $tracking->user_id = $shippingOrder->deliveryCourier_id;
-                        $tracking->status = 'to_destination_warehouse';
-                        $tracking->description = "Paket sedang dikirim menuju gudang kecamatan tujuan oleh driver {$driver->name} ({$driver->phone})";
-                        $tracking->save();
+                // Action::make('deliveryCourier_id')
+                //     ->button()
+                //     ->color('warning')
+                //     ->label('Pilih Kurir Pengantar')->icon('heroicon-o-truck')
+                //     ->form([
+                //         Select::make('city_id')
+                //             ->options(
+                //                 \App\Models\City::all()->mapWithKeys(fn($city) => [
+                //                     $city->id => $city->provinsi . ' - ' .
+                //                         $city->kota . ' - ' .
+                //                         $city->kecamatan . ' - ' .
+                //                         $city->kelurahan . ' - ' .
+                //                         $city->postal_code,
+                //                 ])
+                //             )
+                //             ->live()
+                //             ->label('Pilih Kurir By Kecamatan')
+                //             ->searchable()
+                //             ->afterStateUpdated(fn(callable $set) => $set('deliveryCourier_id', null))
+                //             ->required(),
+                //         Select::make('deliveryCourier_id')
+                //             ->label('Pilih Kurir')
+                //             ->required()
+                //             ->searchable()
+                //             ->options(function (Get $get): array {
+                //                 $cityId = $get('city_id');
+                //                 return $cityId
+                //                     ? User::where('role', 'driver')
+                //                     ->where('city_id', $cityId)
+                //                     ->pluck('name', 'id')
+                //                     ->toArray()
+                //                     : [];
+                //             }),
+                //     ])
+                //     ->action(function (array $data, Transaction $trx): void {
+                //         $shippingOrder = ShippingOrder::findOrFail($trx->shipping_order_id);
+                //         $shippingOrder->delivery_courier_id = $data['deliveryCourier_id'];
+                //         $shippingOrder->status = 'to_destination_warehouse';
+                //         $shippingOrder->save();
+                //         $driver = User::findOrFail($shippingOrder->deliveryCourier_id);
+                //         $tracking = new TrackingHistory();
+                //         $tracking->shipping_order_id = $shippingOrder->id;
+                //         $tracking->user_id = $shippingOrder->deliveryCourier_id;
+                //         $tracking->status = 'to_destination_warehouse';
+                //         $tracking->description = "Paket sedang dikirim menuju gudang kecamatan tujuan oleh driver {$driver->name} ({$driver->phone})";
+                //         $tracking->save();
 
-                        Notification::make()
-                            ->title('Driver berhasil dipilih!')
-                            ->success()
-                            ->send();
-                    })
-                    ->visible(fn($record) => $record->ShippingOrder->delivery_courier_id === null)
-                    ->modalAlignment(Alignment::Center)
+                //         Notification::make()
+                //             ->title('Driver berhasil dipilih!')
+                //             ->success()
+                //             ->send();
+                //     })
+                //     ->visible(fn($record) => $record->ShippingOrder->delivery_courier_id === null)
+                //     ->modalAlignment(Alignment::Center)
 
             ])
             ->groups([
@@ -339,7 +365,7 @@ class TransactionResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -354,6 +380,7 @@ class TransactionResource extends Resource
                             ->label('Barcode')
                             ->width('100%')
                             ->height('100%')
+                            ->alignCenter()
                             ->getStateUsing(fn($record) => asset('' . $record->ShippingOrder->barcode)),
                     ]),
                 Section::make('Detail Transaksi')
@@ -422,17 +449,85 @@ class TransactionResource extends Resource
                             ->visible(fn($record) => $record->ShippingOrder->pickup_type === 'pickup'),
                         TextEntry::make('ShippingOrder.status')->label('Status Pengiriman')->badge()->color(function (string $state): string {
                             return match ($state) {
-                                'pending' => 'warning',
+                                'order_baru' => 'warning',
                                 'pickup' => 'info',
                                 'dropoff' => 'info',
+                                'dikirim' => 'info',
                                 'in_transit' => 'success',
+                                'on_delivery' => 'danger',
+                                'pengiriman_gudang' => 'danger',
                                 'delivered' => 'danger',
+                                'ready_for_delivery' => 'secondary',
+                                'selesai' => 'secondary',
                                 'cancelled' => 'secondary',
                             };
                         }),
                     ])->columnSpan(['lg' => 2, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
 
+                Section::make('Detail Pickup Kurir')
+                    ->visible(fn($record) => $record->ShippingOrder->pickup_courier_id !== null && $record->ShippingOrder->pickup_type === 'pickup')
+                    ->schema([
+                        TextEntry::make('ShippingOrder.pickupCourier.name')->label('Kurir'),
+                        TextEntry::make('ShippingOrder.pickupCourier.email')->label('Email'),
+                        TextEntry::make('ShippingOrder.pickupCourier.phone')->label('Nomor Telepon'),
+                        TextEntry::make('ShippingOrder.pickupCourier.gender')->label('Jenis Kelamin'),
+                        TextEntry::make('ShippingOrder.pickupCourier.vehicle_type')->label('Tipe Kendaraan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.vehicle_number')->label('Nomor Kendaraan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.provinsi')->label('Provinsi'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.kota')->label('Kota'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.kecamatan')->label('Kecamatan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.kelurahan')->label('Kelurahan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.postal_code')->label('Kode POS'),
+                        TextEntry::make('ShippingOrder.pickupCourier.warehouse.name')->label('Gudang'),
+                        TextEntry::make('ShippingOrder.pickupCourier.warehouse.address')->label('Alamat Gudang'),
+                        TextEntry::make('ShippingOrder.pickupCourier.address')->label('Alamat'),
+                    ])->columnSpan(['lg' => 2, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
+
+                Section::make('Detail Driver')
+                    ->visible(fn($record) => $record->ShippingOrder->driver_id !== null)
+                    ->schema([
+                        TextEntry::make('ShippingOrder.driver.name')->label('Kurir'),
+                        TextEntry::make('ShippingOrder.driver.email')->label('Email'),
+                        TextEntry::make('ShippingOrder.driver.phone')->label('Nomor Telepon'),
+                        TextEntry::make('ShippingOrder.driver.gender')->label('Jenis Kelamin'),
+                        TextEntry::make('ShippingOrder.driver.created_at')->label('Dibuat')->date(),
+                        TextEntry::make('ShippingOrder.driver.city.provinsi')->label('Provinsi'),
+                        TextEntry::make('ShippingOrder.driver.city.kota')->label('Kota'),
+                        TextEntry::make('ShippingOrder.driver.city.kecamatan')->label('Kecamatan'),
+                        TextEntry::make('ShippingOrder.driver.city.kelurahan')->label('Kelurahan'),
+                        TextEntry::make('ShippingOrder.driver.city.postal_code')->label('Kode POS'),
+                        TextEntry::make('ShippingOrder.driver.warehouse.name')->label('Gudang'),
+                        TextEntry::make('ShippingOrder.driver.warehouse.address')->label('Alamat Gudang'),
+                        TextEntry::make('ShippingOrder.driver.address')->label('Alamat'),
+                    ])->columnSpan(['lg' => 2, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
+                Section::make('Detail Kurir Pengantaran')
+                    ->visible(fn($record) => $record->ShippingOrder->delivery_courier_id !== null)
+                    ->schema([
+                        TextEntry::make('ShippingOrder.pickupCourier.name')->label('Kurir'),
+                        TextEntry::make('ShippingOrder.pickupCourier.email')->label('Email'),
+                        TextEntry::make('ShippingOrder.pickupCourier.phone')->label('Nomor Telepon'),
+                        TextEntry::make('ShippingOrder.pickupCourier.gender')->label('Jenis Kelamin'),
+                        TextEntry::make('ShippingOrder.pickupCourier.vehicle_type')->label('Tipe Kendaraan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.vehicle_number')->label('Nomor Kendaraan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.provinsi')->label('Provinsi'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.kota')->label('Kota'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.kecamatan')->label('Kecamatan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.kelurahan')->label('Kelurahan'),
+                        TextEntry::make('ShippingOrder.pickupCourier.city.postal_code')->label('Kode POS'),
+                        TextEntry::make('ShippingOrder.pickupCourier.warehouse.name')->label('Gudang'),
+                        TextEntry::make('ShippingOrder.pickupCourier.warehouse.address')->label('Alamat Gudang'),
+                        TextEntry::make('ShippingOrder.pickupCourier.address')->label('Alamat'),
+                    ])->columnSpan(['lg' => 2, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
+
+
             ])->columns(1);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        /** @var class-string<Model> $modelClass */
+        $modelClass = static::$model;
+        return (string) $modelClass::count();
     }
 
     public static function getRelations(): array

@@ -13,7 +13,11 @@ use App\Models\Mitra;
 use App\Models\News;
 use App\Models\SectionFitur;
 use App\Models\Setting;
+use App\Models\ShippingRate;
+use App\Models\ShippingZone;
 use App\Models\TermCondition;
+use App\Models\TrackingHistory;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Models\VisiMisi;
 use Filament\Notifications\Notification;
@@ -30,10 +34,87 @@ class HomeController extends Controller
         $setting = Setting::first();
         $mitra = Mitra::all();
         $sectionfitur = SectionFitur::first();
+        $city = ShippingZone::all();
         $fitur = Fitur::all();
         $news = News::latest()->limit(3)->get();
-        return Inertia::render('Home/Home/Index', compact('setting', 'mitra', 'sectionfitur', 'fitur', 'news'));
+        return Inertia::render('Home/Home/Index', compact('setting', 'mitra', 'sectionfitur', 'fitur', 'news', 'city'));
     }
+
+    public function cekResiPage($invoice_number)
+    {
+        $setting = Setting::first();
+        $trx = Transaction::where('invoice_number', $invoice_number)->first();
+        $tracking = TrackingHistory::where('shipping_order_id', $trx->shipping_order_id)->get();
+        return Inertia::render('Home/Resi/Index', [
+            'result' => $trx,
+            'setting' => $setting,
+            'tracking' => $tracking
+        ]);
+    }
+
+
+    public function cekOngkir(Request $request)
+    {
+        $originCity = City::find($request->origin_city_id);
+        $destinationCity = City::find($request->destination_city_id);
+        $setting = Setting::first();
+        if (!$originCity || !$destinationCity) {
+            return Inertia::render('Home/Cekongkir/Index', [
+                'error' => 'Kota tidak valid',
+                'form' => $request->all(),
+                'services' => []
+            ]);
+        }
+
+        $shippingZone = ShippingZone::where('origin_city_id', $originCity->id)
+            ->where('destination_city_id', $destinationCity->id)
+            ->first();
+
+        if (!$shippingZone) {
+            return Inertia::render('Home/Cekongkir/Index', [
+                'error' => 'Zona tidak ditemukan',
+                'form' => $request->all(),
+                'services' => []
+            ]);
+        }
+
+        $rates = ShippingRate::with('shippingService')
+            ->where('shipping_zone_id', $shippingZone->id)
+            ->get();
+
+        $panjang = $request->panjang / 100;
+        $lebar = $request->lebar / 100;
+        $tinggi = $request->tinggi / 100;
+        $volume = $panjang * $lebar * $tinggi;
+
+        $results = [];
+
+        foreach ($rates as $rate) {
+            $weightCost = $request->berat * $rate->price_per_kg;
+            $volumeCost = $volume * $rate->price_per_volume;
+            $shippingCost = max($weightCost, $volumeCost);
+
+            if ($rate->min_price) {
+                $shippingCost = max($shippingCost, $rate->min_price);
+            }
+
+            $results[] = [
+                'id' => $rate->shippingService->id,
+                'name' => $rate->shippingService->name,
+                'desc' => $rate->shippingService->desc,
+                'price' => $shippingCost,
+            ];
+        }
+
+        return Inertia::render('Home/Cekongkir/Index', [
+            'form' => $request->all(),
+            'services' => $results,
+            'setting' => $setting
+        ]);
+    }
+
+
+
 
     public function faq()
     {

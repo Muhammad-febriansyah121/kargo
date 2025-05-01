@@ -34,6 +34,8 @@ export default function ScanQr({ onScanSuccess }: Props) {
     const [error, setError] = useState<string | null>(null);
     const [showErrorDialog, setShowErrorDialog] = useState(false);
     const [loading, setLoading] = useState(false); // Menambahkan state untuk loading
+    const [image, setImage] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const qrRef = useRef(null);
     useEffect(() => {
@@ -59,7 +61,7 @@ export default function ScanQr({ onScanSuccess }: Props) {
     }, []);
     const handleCari = async (code: string) => {
         try {
-            const res = await axios.post("/scan-result", {
+            const res = await axios.post("/kurir/scan-result", {
                 tracking_number: code,
             });
             setOrder(res.data.data);
@@ -71,34 +73,37 @@ export default function ScanQr({ onScanSuccess }: Props) {
     };
 
     const handleKirim = async () => {
-        if (!order) {
-            alert("Tidak ada data untuk dikirim.");
+        if (!order || !image) {
+            alert("Pastikan data dan gambar sudah lengkap.");
             return;
         }
-        setLoading(true); // Set loading menjadi true ketika mulai kirim
+
+        setLoading(true);
+
+        const formData = new FormData();
+        formData.append(
+            "tracking_number",
+            order.shipping_order.tracking_number
+        );
+        formData.append("delivery_proof", image);
+
         try {
-            const res = await axios.post("/driver/prosesKirim", {
-                tracking_number: order.shipping_order.tracking_number,
+            const res = await axios.post("/kurir/prosesKirim", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
             });
 
-            // Cek jika ada error dari backend
             if (res.data.error) {
-                toast.error(res.data.error, {
-                    position: "top-right",
-                });
+                toast.error(res.data.error);
             } else {
-                toast.success("Barang berhasil dikirim.", {
-                    position: "top-right",
-                });
-                setOrder(null); // reset tampilan setelah kirim
+                toast.success("Barang berhasil dikirim.");
+                setOrder(null);
+                setImage(null);
             }
-        } catch (err: any) {
-            console.log(err.response ? err.response.data : err);
-            toast.error("Ada kesalahan sistem.", {
-                position: "top-right",
-            });
+        } catch (err) {
+            console.error(err);
+            toast.error("Terjadi kesalahan.");
         } finally {
-            setLoading(false); // Set loading kembali false setelah selesai
+            setLoading(false);
         }
     };
 
@@ -325,41 +330,87 @@ export default function ScanQr({ onScanSuccess }: Props) {
                                 </TableRow>
                             </TableBody>
                         </Table>
-                        <Table className="shrink-0 border mt-10">
-                            <TableCaption>Informasi Penerima</TableCaption>
-                            <TableBody>
-                                <TableRow>
-                                    <TableCell className="font-medium">
-                                        Penerima
-                                    </TableCell>
-                                    <TableCell>
-                                        {order.shipping_order.recipient_name}
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="font-medium">
-                                        Nomor Telepon
-                                    </TableCell>
-                                    <TableCell>
-                                        {order.shipping_order.recipient_phone}
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell className="font-medium">
-                                        Alamat
-                                    </TableCell>
-                                    <TableCell>
-                                        {order.shipping_order.recipient_address}
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                        <div>
+                            <Table className="shrink-0 border mt-10">
+                                <TableCaption>Informasi Pengirim</TableCaption>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell className="font-medium">
+                                            Pengirim
+                                        </TableCell>
+                                        <TableCell>
+                                            {order.shipping_order.customer.name}
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">
+                                            Nomor Telepon
+                                        </TableCell>
+                                        <TableCell>
+                                            {
+                                                order.shipping_order.customer
+                                                    .phone
+                                            }
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">
+                                            Alamat
+                                        </TableCell>
+                                        <TableCell>
+                                            {
+                                                order.shipping_order.customer
+                                                    .address
+                                            }
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                            <Table className="shrink-0 border mt-10">
+                                <TableCaption>Informasi Penerima</TableCaption>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell className="font-medium">
+                                            Penerima
+                                        </TableCell>
+                                        <TableCell>
+                                            {
+                                                order.shipping_order
+                                                    .recipient_name
+                                            }
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">
+                                            Nomor Telepon
+                                        </TableCell>
+                                        <TableCell>
+                                            {
+                                                order.shipping_order
+                                                    .recipient_phone
+                                            }
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">
+                                            Alamat
+                                        </TableCell>
+                                        <TableCell>
+                                            {
+                                                order.shipping_order
+                                                    .recipient_address
+                                            }
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
+                    <br />
+                    <br />
+                    <br />
                     {(() => {
-                        if (
-                            order.shipping_order.status === "order_baru" ||
-                            order.shipping_order.status === "pickup"
-                        ) {
+                        if (order.shipping_order.status === "pickup") {
                             return (
                                 <Button
                                     onClick={handleKirim}
@@ -374,23 +425,62 @@ export default function ScanQr({ onScanSuccess }: Props) {
                                 </Button>
                             );
                         } else if (
-                            order.shipping_order.status === "on_delivery"
+                            order.shipping_order.status === "ready_for_delivery"
                         ) {
                             return (
-                                <Button
-                                    onClick={handleKirim}
-                                    disabled={loading}
-                                    className={`mt-4 ${
-                                        loading ? "bg-gray-400" : "bg-green-600"
-                                    }`}
-                                >
-                                    {loading
-                                        ? "Sedang Mengirim..."
-                                        : "Dalam Pengantaran"}
-                                </Button>
+                                <>
+                                    {imagePreview && (
+                                        <div className="mt-5 pt-5 text-center">
+                                            <p className="text-sm text-gray-600 mb-3">
+                                                Preview Bukti Pengantaran:
+                                            </p>
+                                            <div className="flex justify-center">
+                                                <img
+                                                    src={imagePreview}
+                                                    alt="Preview"
+                                                    className="w-72 rounded-2xl border border-gray-300"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        className="mt-3"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setImage(file);
+
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setImagePreview(
+                                                        reader.result as string
+                                                    );
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+
+                                    <Button
+                                        onClick={handleKirim}
+                                        disabled={loading}
+                                        className={`mt-4 ${
+                                            loading
+                                                ? "bg-gray-400"
+                                                : "bg-blue-600"
+                                        }`}
+                                    >
+                                        {loading
+                                            ? "Sedang Mengirim..."
+                                            : "PENGANTARAN"}
+                                    </Button>
+                                </>
                             );
                         } else {
-                            return null; // Tidak menampilkan apa-apa jika tidak memenuhi kondisi di atas
+                            return null; // Atau tampilkan UI fallback
                         }
                     })()}
                 </div>

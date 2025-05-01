@@ -11,14 +11,15 @@
 
         body {
             font-family: sans-serif;
-            font-size: 7px;
+            font-size: 5px;
             margin: 0;
             padding: 0;
             word-wrap: break-word;
+            /* background-image: url('{{ asset('img/label.png') }}'); */
             /* Mencegah teks overflow */
         }
 
-        .label {
+        .old {
             width: 100%;
             border: 1px solid #000;
             padding: 3px;
@@ -30,6 +31,33 @@
             page-break-inside: avoid;
             /* Hindari pemisahan elemen label saat print */
         }
+
+        .label {
+            position: relative;
+            z-index: 1;
+            background-color: white;
+            border: 1px solid #000;
+            padding: 3px;
+            box-sizing: border-box;
+
+            /* opsional */
+        }
+
+        .label::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('{{ public_path('storage/' . $setting->logo) }}');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 80px;
+            opacity: 0.25;
+            z-index: 0;
+        }
+
 
         .header {
             display: flex;
@@ -113,6 +141,31 @@
             /* Menyembunyikan teks yang meluap */
         }
 
+        .barang-table {
+            width: 100%;
+            table-layout: fixed;
+            /* Agar kolom lebih stabil */
+            border-collapse: collapse;
+            /* Menggabungkan border tabel */
+        }
+
+        .barang-table th,
+        .barang-table td {
+            border: 1px solid #000;
+            /* Menambahkan border pada setiap kolom */
+            padding: 2px;
+            /* Memberikan padding agar isi tabel tidak terlalu rapat */
+        }
+
+        .barang-table .column-number {
+            width: 30px;
+            max-width: 20px;
+            text-align: center;
+            /* Agar nomor urut rata tengah */
+        }
+
+
+
         .bold {
             font-weight: bold;
         }
@@ -124,18 +177,16 @@
         .barcode {
             text-align: center;
             margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .barcode-image {
-            display: block;
-            margin: 0 auto 10px auto;
-            max-width: 250px;
-            /* max-w-xs di Tailwind = 20rem = 320px */
-            object-fit: cover;
-            /* border: 1px solid #000; */
-            padding: 1px;
-            /* p-2 = 0.5rem = 8px */
-            box-sizing: border-box;
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 5px;
         }
     </style>
 
@@ -143,74 +194,73 @@
 
 <body>
     <div class="label">
-        <div class="header">
-            <div>
-                <img src="{{ public_path('storage/' . $setting->logo) }}" alt="Logo">
+        <div style="position: relative; z-index: 1;">
+            <center>
+                <img src="{{ $trx->shippingOrder->barcode }}" width="200" style="height: 50px;width: 50px" height="100"
+                    alt="Barcode" class="barcode-image">
+                <br>
+                <strong style="text-align: center;">{{ $trx->invoice_number }}</strong>
+            </center>
+
+
+            <div class="row">
+                <table class="product-table">
+                    <tr>
+                        <th colspan="2">Penerima</th>
+                    </tr>
+                    <tr>
+                        <th>Nama</th>
+                        <td>{{ $trx->shippingOrder->recipient_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Kota</th>
+                        <td>{{ $trx->shippingOrder->destinationCity->kota }}</td>
+                    </tr>
+                    <tr>
+                        <th>Alamat</th>
+                        <td style="font-size: 5px;">{{ $trx->shippingOrder->recipient_address }}</td>
+                    </tr>
+                </table>
+                <table class="product-table">
+                    <tr>
+                        <th colspan="2">Pengirim</th>
+                    </tr>
+                    <tr>
+                        <th>Nama</th>
+                        <td>{{ $trx->user->name }}</td>
+                    </tr>
+                    <tr>
+                        <th>No.HP</th>
+                        <td>{{ $trx->user->phone }}</td>
+                    </tr>
+                    <tr>
+                        <th>Kota</th>
+                        <td>{{ $trx->user->city->kota }}</td>
+                    </tr>
+                </table>
             </div>
-            {{-- <div style="font-size: 10px;"><strong>{{ $setting->site_name }}</strong></div> --}}
-        </div>
 
-        <div class="barcode">
-            <img src="{{ $trx->shippingOrder->barcode }}" alt="Barcode" class="barcode-image">
-            <strong>{{ $trx->invoice_number }}</strong>
-        </div>
-
-
-        <div class="row">
-            <table class="product-table">
-                <tr>
-                    <th colspan="2">Penerima</th>
-                </tr>
-                <tr>
-                    <th>Nama</th>
-                    <td>{{ $trx->shippingOrder->recipient_name }}</td>
-                </tr>
-                <tr>
-                    <th>Kota</th>
-                    <td>{{ $trx->shippingOrder->destinationCity->kota }}</td>
-                </tr>
-                <tr>
-                    <th>Alamat</th>
-                    <td style="font-size: 5px;">{{ $trx->shippingOrder->recipient_address }}</td>
-                </tr>
+            <div class="section"><strong>No. Pesanan:</strong> {{ $trx->shippingOrder->tracking_number }}</div>
+            <br>
+            <table class="barang-table">
+                <thead>
+                    <tr>
+                        <th class="column-number">#</th>
+                        <th>Nama Produk</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="column-number">1</td>
+                        <td>{{ $trx->shippingOrder->nama_barang }}</td>
+                    </tr>
+                </tbody>
             </table>
-            <table class="product-table">
-                <tr>
-                    <th colspan="2">Pengirim</th>
-                </tr>
-                <tr>
-                    <th>Nama</th>
-                    <td>{{ $trx->user->name }}</td>
-                </tr>
-                <tr>
-                    <th>No.HP</th>
-                    <td>{{ $trx->user->phone }}</td>
-                </tr>
-                <tr>
-                    <th>Kota</th>
-                    <td>{{ $trx->user->city->kota }}</td>
-                </tr>
-            </table>
+
+
+
+            <div class="small">Pesan: {{ $trx->shippingOrder->notes }}</div>
         </div>
-
-        <div class="section"><strong>No. Pesanan:</strong> {{ $trx->shippingOrder->tracking_number }}</div>
-
-        <table class="product-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Nama Produk</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>{{ $trx->shippingOrder->nama_barang }}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="small">Pesan: {{ $trx->shippingOrder->notes }}</div>
     </div>
 </body>
 

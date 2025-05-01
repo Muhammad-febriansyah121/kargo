@@ -31,7 +31,7 @@ export default function FooterDriver({ setting, auth }: Props) {
                                         ? "w-6 h-6 text-white" // Untuk ikon yang aktif
                                         : "w-6 h-6 text-black", // Untuk ikon yang tidak aktif
                             })}
-                            <span
+                            {/* <span
                                 className={
                                     currentUrl === item.url
                                         ? "text-white text-sm text-center font-semibold"
@@ -39,7 +39,7 @@ export default function FooterDriver({ setting, auth }: Props) {
                                 }
                             >
                                 {item.name}
-                            </span>
+                            </span> */}
                         </Link>
                     );
                 })}
