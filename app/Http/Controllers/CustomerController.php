@@ -106,6 +106,7 @@ class CustomerController extends Controller
 
         $estimationDate = Carbon::now()->addDays($shippingRate->estimation_day_max)->format('Y-m-d');
 
+        // Create ShippingOrder
         $q = new ShippingOrder();
         $q->barcode = 'storage/' . $qrPath;
         $q->tracking_number = $trackingNumber;
@@ -126,8 +127,9 @@ class CustomerController extends Controller
         $q->pickup_address = $request->pickup_address;
         $q->notes = $request->notes;
         $q->estimation_date = $estimationDate;
-        $q->save();
+        $q->save();  // Simpan order terlebih dahulu
 
+        // Create Transaction
         $trx = new Transaction();
         $trx->user_id = $user->id;
         $trx->shipping_order_id = $q->id;
@@ -135,6 +137,7 @@ class CustomerController extends Controller
         $trx->payment_method = $request->payment_method;
         $trx->status = "pending";
         $trx->amount = $shippingCost;
+        $trx->save();  // Simpan transaksi terlebih dahulu
 
         if ($request->payment_method === "transfer") {
             \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
@@ -142,7 +145,7 @@ class CustomerController extends Controller
             \Midtrans\Config::$isProduction = config('services.midtrans.is_production');
             \Midtrans\Config::$isSanitized = config('services.midtrans.is_sanitized');
             \Midtrans\Config::$is3ds = config('services.midtrans.is_3ds');
-            \Midtrans\Config::$overrideNotifUrl = config('app.url') . '/api/midtrans-callback';
+            \Midtrans\Config::$overrideNotifUrl = env('APP_URL') . '/api/midtrans-callback';
 
             $item_details = [[
                 'id' => $trx->id,
@@ -153,7 +156,7 @@ class CustomerController extends Controller
             ]];
 
             $transaction_details = [
-                'order_id' => 'INV' . now(),
+                'order_id' => $trackingNumber,
                 'gross_amount' => $trx->amount,
             ];
 
@@ -172,16 +175,40 @@ class CustomerController extends Controller
 
             $snapResponse = \Midtrans\Snap::createTransaction($params);
             $trx->payment_url = $snapResponse->redirect_url;
-            $trx->save();
+            $trx->save();  // Simpan URL pembayaran ke transaksi
             return response()->json(['redirect_url' => $trx->payment_url]);
         } else {
             $trx->payment_url = route('customers.successPayment', ['invoice_number' => $trx->invoice_number]);
-            $trx->save();
+            $trx->save();  // Simpan URL pembayaran jika tidak menggunakan transfer
             return response()->json(['redirect_url' => $trx->payment_url]);
         }
     }
 
-
+    public function callback(Request $request)
+    {
+        $serverKey = config('services.midtrans.server_key');
+        $hashed = hash('sha512', $request->input('order_id') . $request->input('status_code') . $request->input('gross_amount') . $serverKey);
+        if ($hashed !== $request->input('signature_key')) {
+            return response()->json(['error' => 'Invalid signature'], 400);
+        } else {
+            $transaction = Transaction::where("invoice_number", $request->order_id)->firstOrFail();
+            if ($request->input('transaction_status') == 'capture') {
+                $transaction->status = 'paid';
+            } else if ($request->input('transaction_status') == 'settlement') {
+                $transaction->status = 'paid';
+            } else if ($request->input('transaction_status') == 'pending') {
+                $transaction->status = 'pending';
+            } else if ($request->input('transaction_status') == 'deny') {
+                $transaction->status = 'failed';
+            } else if ($request->input('transaction_status') == 'expire') {
+                $transaction->status = 'expired';
+            } else if ($request->input('transaction_status') == 'cancel') {
+                $transaction->status = 'canceled';
+            }
+            $transaction->save();
+            return response()->json(['message' => 'Callback success']);
+        }
+    }
 
     public function successPayment($invoice_number)
     {

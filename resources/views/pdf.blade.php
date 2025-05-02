@@ -50,7 +50,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('{{ public_path('storage/' . $setting->logo) }}');
+            background-image: url('data:image/png;base64,{{ base64_encode(file_get_contents('storage/' . $setting->logo)) }}');
             background-repeat: no-repeat;
             background-position: center;
             background-size: 80px;
@@ -196,8 +196,9 @@
     <div class="label">
         <div style="position: relative; z-index: 1;">
             <center>
-                <img src="{{ $trx->shippingOrder->barcode }}" width="200" style="height: 50px;width: 50px" height="100"
-                    alt="Barcode" class="barcode-image">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents($trx->shippingOrder->barcode)) }}"
+                    width="50" height="50" alt="Barcode" class="barcode-image">
+
                 <br>
                 <strong style="text-align: center;">{{ $trx->invoice_number }}</strong>
             </center>

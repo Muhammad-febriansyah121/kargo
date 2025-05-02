@@ -102,6 +102,8 @@ export default function TableRiwayat({ trx }: Props) {
                                     ? "Pengiriman Gudang"
                                     : item.shipping_order.status === "delivered"
                                     ? "Delivered"
+                                    : item.shipping_order.status === "selesai"
+                                    ? "Selesai"
                                     : item.shipping_order.status === "cancelled"
                                     ? "Cancelled"
                                     : "Unknown"}

@@ -24,7 +24,7 @@ export default function Index({ setting, auth, city, service }: Props) {
                             Harap isi form dibawah ini dengan sebenar-benarnya.
                         </p>
                     </div>
-                    <div className="bg-white p-5 rounded-2xl">
+                    <div className="bg-white mb-40 md:mb-0 p-5 rounded-2xl">
                         <FormKirimBarang
                             city={city}
                             service={service}

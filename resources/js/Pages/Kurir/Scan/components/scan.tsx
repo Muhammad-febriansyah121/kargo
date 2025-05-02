@@ -73,19 +73,21 @@ export default function ScanQr({ onScanSuccess }: Props) {
     };
 
     const handleKirim = async () => {
-        if (!order || !image) {
-            alert("Pastikan data dan gambar sudah lengkap.");
+        if (!order) {
+            alert("Data pengiriman tidak tersedia.");
             return;
         }
 
         setLoading(true);
-
         const formData = new FormData();
         formData.append(
             "tracking_number",
             order.shipping_order.tracking_number
         );
-        formData.append("delivery_proof", image);
+
+        if (image) {
+            formData.append("delivery_proof", image);
+        }
 
         try {
             const res = await axios.post("/kurir/prosesKirim", formData, {

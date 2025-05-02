@@ -3,14 +3,11 @@
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\KurirController;
+use App\Http\Controllers\PaymentController;
 use App\Models\ShippingOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 
 Route::post('/sendbarang', [CustomerController::class, 'sendbarang'])->name('sendbarang');
 
@@ -40,3 +37,8 @@ Route::get('/api/cek-resi/{invoice_number}', function ($invoice_number) {
 
 
 Route::get('/find-tracking/{trackingNumber}', [DriverController::class, 'findByTracking']);
+Route::post('/midtrans-callback', [PaymentController::class, 'callback'])->name('midtrans-callback');
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
