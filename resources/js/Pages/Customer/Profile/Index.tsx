@@ -4,14 +4,16 @@ import { UserType } from "@/types/user";
 import React from "react";
 import FormProfile from "./components/form";
 import { CityType } from "@/types/city";
+import { PesantrenType } from "@/types/pesantre";
 
 interface Props {
     auth: UserType;
     setting: SettingType;
     user: UserType;
     city: CityType[];
+    pesantren: PesantrenType[];
 }
-export default function Index({ auth, user, city }: Props) {
+export default function Index({ auth, user, city, pesantren }: Props) {
     return (
         <CustomerLayout auth={auth}>
             <section className="lg:pl-[250px]">
@@ -21,7 +23,11 @@ export default function Index({ auth, user, city }: Props) {
                         Hai {auth.name}, yuk sesuaikan profilmu di sini!{" "}
                     </p>
                     <div className="flex flex-col gap-4">
-                        <FormProfile city={city} user={user} />
+                        <FormProfile
+                            city={city}
+                            user={user}
+                            pesantren={pesantren}
+                        />
                     </div>
                 </div>
             </section>

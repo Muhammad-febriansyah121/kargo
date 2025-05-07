@@ -13,6 +13,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 
 class TentangKami extends Page implements HasForms
@@ -27,6 +28,15 @@ class TentangKami extends Page implements HasForms
     protected static ?string $navigationGroup = 'Main Menu';
     protected static ?string $navigationLabel = 'Tentang Kami';
     protected static ?int $navigationSort = 2;
+
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
+
 
     public function mount(): void
     {

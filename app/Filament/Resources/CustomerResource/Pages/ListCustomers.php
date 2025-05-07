@@ -8,6 +8,7 @@ use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class ListCustomers extends ListRecords
 {
@@ -27,6 +28,13 @@ class ListCustomers extends ListRecords
 
     protected function getTableQuery(): ?Builder
     {
-        return User::query()->where('role', 'customer');
+        $user = Auth::user();
+        if ($user->role === 'admin' && $user->divisi === NULL) {
+            return User::query()->where('role', 'customer');
+        } else {
+            return User::query()->where('role', 'customer')->where('author', Auth::user()->id);
+        }
+
+        return null;
     }
 }

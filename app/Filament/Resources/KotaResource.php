@@ -16,6 +16,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use Teguh02\IndonesiaTerritoryForms\IndonesiaTerritoryForms;
 
 class KotaResource extends Resource
@@ -27,6 +28,13 @@ class KotaResource extends Resource
     protected static ?string $navigationLabel = 'Kota';
     protected static ?int $navigationSort = 14;
 
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form

@@ -10,6 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\ImageEntry;
@@ -24,6 +25,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 
 class CustomerResource extends Resource
@@ -35,16 +37,38 @@ class CustomerResource extends Resource
     protected static ?string $navigationLabel = 'Customer';
     protected static ?int $navigationSort = 19;
 
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+        if ($user->role === 'admin' && ($user->divisi === null || $user->divisi === "INCOMING")) {
+            return true;
+        } elseif ($user->role === 'mitra') {
+            return true;
+        }
+        return false;
+    }
+
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Section::make()->schema([
                     TextInput::make('name')->required()->placeholder('Nama Customer')->label('Customer'),
-                    TextInput::make('email')->required()->email()->placeholder('Email'),
-                    TextInput::make('password')->password()->required()->placeholder('Password'),
-                    TextInput::make('phone')->required()->placeholder('Nomor Telepon'),
-                    TextInput::make('store')->required()->placeholder('Nama Toko'),
+                    TextInput::make('email')->required()->email()->placeholder('Email')->visible(function () {
+                        return Auth::user()->role === 'admin' && Auth::user()->divisi === null;
+                    }),
+                    TextInput::make('password')
+                        ->password()
+                        ->placeholder('Password')
+                        ->visible(function () {
+                            return Auth::user()->role === 'admin' && Auth::user()->divisi === null;
+                        }),
+
+                    TextInput::make('phone')->required()->placeholder('Nomor Telepon')->numeric(),
+                    TextInput::make('store')->required()->placeholder('Nama Toko')->visible(function () {
+                        return Auth::user()->role === 'admin' && Auth::user()->divisi === null;
+                    }),
                     Select::make('city_id')
                         ->options(
                             \App\Models\City::get()
@@ -61,7 +85,7 @@ class CustomerResource extends Resource
                         ->label('Kota')
                         ->searchable()
                         ->required(),
-                    TextInput::make('address')->required()->placeholder('Alamat'),
+                    Textarea::make('address')->required()->placeholder('Alamat'),
                     Select::make('gender')->options([
                         'Laki-laki' => 'Laki-laki',
                         'Perempuan' => 'Perempuan',
@@ -86,6 +110,7 @@ class CustomerResource extends Resource
                 ])->columnSpan(['lg' => 1]),
             ])->columns(3);
     }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -125,7 +150,7 @@ class CustomerResource extends Resource
             ->schema([
                 ComponentsSection::make()->schema(
                     [
-                        TextEntry::make('name')->label('Kurir'),
+                        TextEntry::make('name')->label('Nama'),
                         TextEntry::make('email')->label('Email'),
                         TextEntry::make('phone')->label('Nomor Telepon'),
                         TextEntry::make('gender')->label('Jenis Kelamin'),

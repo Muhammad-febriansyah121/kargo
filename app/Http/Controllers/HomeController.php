@@ -58,6 +58,7 @@ class HomeController extends Controller
         $originCity = City::find($request->origin_city_id);
         $destinationCity = City::find($request->destination_city_id);
         $setting = Setting::first();
+
         if (!$originCity || !$destinationCity) {
             return Inertia::render('Home/Cekongkir/Index', [
                 'error' => 'Kota tidak valid',
@@ -78,31 +79,41 @@ class HomeController extends Controller
             ]);
         }
 
+        $panjang = $request->panjang;
+        $lebar = $request->lebar;
+        $tinggi = $request->tinggi;
+        $berat = $request->berat;
+        $volume = $panjang * $lebar * $tinggi;
+
         $rates = ShippingRate::with('shippingService')
             ->where('shipping_zone_id', $shippingZone->id)
             ->get();
 
-        $panjang = $request->panjang / 100;
-        $lebar = $request->lebar / 100;
-        $tinggi = $request->tinggi / 100;
-        $volume = $panjang * $lebar * $tinggi;
-
         $results = [];
 
         foreach ($rates as $rate) {
-            $weightCost = $request->berat * $rate->price_per_kg;
-            $volumeCost = $volume * $rate->price_per_volume;
-            $shippingCost = max($weightCost, $volumeCost);
+            $shippingService = $rate->shippingService;
+
+            if (!$shippingService || !$shippingService->price) {
+                continue;
+            }
+
+            // Hitung berat volumetrik berdasarkan divisor dari service
+            $divisor = $shippingService->price; // Misalnya 6000 untuk udara
+            $beratVolume = $volume / $divisor;
+
+            $beratFinal = max($berat, $beratVolume);
+            $shippingCost = $beratFinal * $rate->price_per_kg;
 
             if ($rate->min_price) {
                 $shippingCost = max($shippingCost, $rate->min_price);
             }
 
             $results[] = [
-                'id' => $rate->shippingService->id,
-                'name' => $rate->shippingService->name,
-                'desc' => $rate->shippingService->desc,
-                'price' => $shippingCost,
+                'id' => $shippingService->id,
+                'name' => $shippingService->name,
+                'desc' => $shippingService->desc,
+                'price' => ceil($shippingCost), // pembulatan ke atas
             ];
         }
 
@@ -112,6 +123,7 @@ class HomeController extends Controller
             'setting' => $setting
         ]);
     }
+
 
 
 
@@ -235,7 +247,7 @@ class HomeController extends Controller
     {
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $request->session()->regenerate();
-            if (Auth::user()->role === 'customer') {
+            if (Auth::user()->role === 'customer' || Auth::user()->role === 'santri') {
                 return to_route('customers.home');
             } else if (Auth::user()->role === 'kurir') {
                 return to_route('kurir.home');

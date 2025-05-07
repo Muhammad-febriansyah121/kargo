@@ -18,7 +18,7 @@ import { ShippingServiceType } from "@/types/shipping_service";
 import { UserType } from "@/types/user";
 import axios from "axios";
 import { Check, ChevronsUpDown, Loader2, SendHorizonal } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
     Command,
@@ -42,6 +42,7 @@ export default function FormKirimBarang({ city, service, auth }: Props) {
     const [errors, setErrors] = useState<any>({});
     const [open, setOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [biaya, setBiaya] = useState<number | null>(null);
     const [data, setData] = useState({
         nama_barang: "",
         berat: "",
@@ -120,11 +121,47 @@ export default function FormKirimBarang({ city, service, auth }: Props) {
                     "Terjadi kesalahan, silakan coba lagi."
             );
             setErrors(error.response?.data.errors || {}); // Tangani error dari response jika ada
-            console.log(error);
         } finally {
             setProcessing(false); // Selesai memproses
         }
     };
+    useEffect(() => {
+        if (selectedId !== null) {
+            setData((prev) => ({
+                ...prev,
+                destination_city_id: selectedId.toString(),
+            }));
+        }
+    }, [selectedId]);
+    useEffect(() => {
+        const berat = Number(data.berat);
+        const panjang = Number(data.panjang);
+        const lebar = Number(data.lebar);
+        const tinggi = Number(data.tinggi);
+
+        if (
+            berat > 0 &&
+            panjang > 0 &&
+            lebar > 0 &&
+            tinggi > 0 &&
+            data.shipping_service_id &&
+            data.destination_city_id
+        ) {
+            axios
+                .post("/cek-biaya", data)
+                .then((res) => {
+                    const biaya = parseFloat(res.data.cost);
+                    if (!isNaN(biaya)) {
+                        setBiaya(biaya);
+                    } else {
+                        setBiaya(null);
+                    }
+                })
+                .catch((error) => {
+                    setBiaya(null);
+                });
+        }
+    }, [data]);
 
     return (
         <form className="flex flex-col gap-4" onSubmit={sendBarang}>
@@ -220,7 +257,6 @@ export default function FormKirimBarang({ city, service, auth }: Props) {
                     <Select
                         value={data.shipping_service_id}
                         onValueChange={(value) => {
-                            console.log("Shipping Rate ID selected:", value); // Tambahkan log
                             setData((prevData) => ({
                                 ...prevData,
                                 shipping_service_id: value,
@@ -491,7 +527,6 @@ export default function FormKirimBarang({ city, service, auth }: Props) {
                     </Label>
                     <Select
                         onValueChange={(value) => {
-                            console.log("Selected payment method:", value); // Cek nilai yang dipilih
                             setPaymentMethod(value);
                             setData((prevData) => ({
                                 ...prevData,
@@ -519,6 +554,14 @@ export default function FormKirimBarang({ city, service, auth }: Props) {
                     />
                 </div>
             </div>
+            {biaya && (
+                <div className="bg-teal-500 p-5 rounded-2xl text-white justify-end items-end flex gap-3">
+                    <h3 className="font-medium">Total Biaya Pengiriman : </h3>{" "}
+                    <span className="font-bold">
+                        {biaya.toLocaleString("id-ID")}
+                    </span>
+                </div>
+            )}
             <div className="flex items-center max-w-[12rem] space-x-2">
                 {processing ? (
                     <Button disabled className="w-full rounded-full bg-biru">

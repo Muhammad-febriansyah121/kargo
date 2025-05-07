@@ -6,6 +6,7 @@ use App\Filament\Resources\KurirResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class CreateKurir extends CreateRecord
 {
@@ -13,7 +14,12 @@ class CreateKurir extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $nomorTujuan = $data['phone'];
+        if (Str::startsWith($nomorTujuan, '08')) {
+            $nomorTujuan = '62' . substr($nomorTujuan, 1);
+        }
         $data['password'] = Hash::make($data['password']);
+        $data['phone'] = $nomorTujuan;
         $data['role'] = 'kurir';
         return $data;
     }

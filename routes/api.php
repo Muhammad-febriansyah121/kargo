@@ -21,6 +21,8 @@ Route::get('/barcode/{tracking}', function ($tracking) {
 // Route::middleware('auth:sanctum')->group(function () {
 Route::get('/dropoff', [KurirController::class, 'pengantaran']);
 Route::get('/pickup', [KurirController::class, 'pickup']);
+Route::post('/cek-biaya', [CustomerController::class, 'cekBiaya']);
+
 // });
 
 Route::get('/api/cek-resi/{invoice_number}', function ($invoice_number) {

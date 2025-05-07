@@ -159,6 +159,7 @@ export default function Hero({ setting, city }: Props) {
                                                 {origin.origin_city.provinsi} -{" "}
                                                 {origin.origin_city.kota} -{" "}
                                                 {origin.origin_city.kecamatan} -{" "}
+                                                {origin.origin_city.kelurahan} -{" "}
                                                 {origin.origin_city.postal_code}
                                             </SelectItem>
                                         ))}
@@ -191,6 +192,10 @@ export default function Hero({ setting, city }: Props) {
                                                 {
                                                     destinasi.destination_city
                                                         .kecamatan
+                                                }{" "}
+                                                {
+                                                    destinasi.destination_city
+                                                        .kelurahan
                                                 }{" "}
                                                 -{" "}
                                                 {

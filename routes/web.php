@@ -46,6 +46,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::post('/customers/updateprofile', [CustomerController::class, 'updateprofile'])->name('customers.updateprofile');
     Route::get('/customers/downloadBarcode/{invoice_number}', [CustomerController::class, 'downloadBarcode'])->name('customers.downloadBarcode');
     Route::get('/customers/selesai/{invoice_number}', [CustomerController::class, 'selesai'])->name('customers.selesai');
+    Route::post('/cek-biaya', [CustomerController::class, 'cekBiaya']);
 
     //driver    
     Route::get('/driver/home', [DriverController::class, 'index'])->name('driver.home');

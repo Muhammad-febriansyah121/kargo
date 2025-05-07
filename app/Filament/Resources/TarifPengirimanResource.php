@@ -24,6 +24,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class TarifPengirimanResource extends Resource
 {
@@ -34,6 +35,13 @@ class TarifPengirimanResource extends Resource
     protected static ?string $navigationLabel = 'Tarif Pengiriman';
     protected static ?int $navigationSort = 16;
 
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form
@@ -58,27 +66,34 @@ class TarifPengirimanResource extends Resource
                         )
                         ->searchable()
                         ->required(),
+                    Select::make("jenis")
+                        ->label("Jenis Pengiriman")
+                        ->required()
+                        ->options([
+                            "udara" => "udara",
+                            "darat" => "darat"
+                        ]),
                     TextInput::make('price_per_kg')
-                        ->label('Harga per Kg')
-                        ->placeholder('Harga per Kg')
+                        ->label('Harga ')
+                        ->placeholder('Harga ')
                         ->prefix('Rp')->mask(RawJs::make('$money($input)'))
                         ->stripCharacters(',')
                         ->numeric()
-                        ->required()->columnSpan(['lg' => 2]),
-                    TextInput::make('price_per_volume')
-                        ->label('Harga per Volume (m³)')
-                        ->placeholder('Harga per Volume (m³)')
-                        ->prefix('Rp')->mask(RawJs::make('$money($input)'))
-                        ->stripCharacters(',')
-                        ->columnSpan(['lg' => 2])
-                        ->numeric()->required(),
-                    TextInput::make('min_price')
-                        ->label('Harga Minimal')
-                        ->placeholder('Harga Minimal')
-                        ->prefix('Rp')->mask(RawJs::make('$money($input)'))
-                        ->stripCharacters(',')
-                        ->columnSpan(['lg' => 2])
-                        ->numeric(),
+                        ->required(),
+                    // TextInput::make('price_per_volume')
+                    //     ->label('Harga per Volume (m³)')
+                    //     ->placeholder('Harga per Volume (m³)')
+                    //     ->prefix('Rp')->mask(RawJs::make('$money($input)'))
+                    //     ->stripCharacters(',')
+                    //     ->columnSpan(['lg' => 2])
+                    //     ->numeric()->required(),
+                    // TextInput::make('min_price')
+                    //     ->label('Harga Minimal')
+                    //     ->placeholder('Harga Minimal')
+                    //     ->prefix('Rp')->mask(RawJs::make('$money($input)'))
+                    //     ->stripCharacters(',')
+                    //     ->columnSpan(['lg' => 2])
+                    //     ->numeric(),
                     TextInput::make('estimation_days_min')
                         ->label('Estimasi Hari Min')
                         ->placeholder('Estimasi Hari Min')
@@ -107,8 +122,8 @@ class TarifPengirimanResource extends Resource
                 TextColumn::make('estimation_days_max')->label('Estimasi Hari Max')->searchable()->suffix(' Hari'),
                 TextColumn::make('shippingService.name')->label('Layanan Pengiriman')->searchable(),
                 TextColumn::make('price_per_kg')->label('Harga per Kg')->searchable()->formatStateUsing(fn($state) => 'Rp ' . number_format($state)),
-                TextColumn::make('price_per_volume')->label('Harga per Volume (m³)')->searchable()->formatStateUsing(fn($state) => 'Rp ' . number_format($state)),
-                TextColumn::make('min_price')->label('Harga Minimal')->searchable()->formatStateUsing(fn($state) => 'Rp ' . number_format($state)),
+                // TextColumn::make('price_per_volume')->label('Harga per Volume (m³)')->searchable()->formatStateUsing(fn($state) => 'Rp ' . number_format($state)),
+                // TextColumn::make('min_price')->label('Harga Minimal')->searchable()->formatStateUsing(fn($state) => 'Rp ' . number_format($state)),
 
             ])
             ->filters([
@@ -132,15 +147,15 @@ class TarifPengirimanResource extends Resource
             ->schema([
                 ComponentsSection::make('')->schema([
                     TextEntry::make('shippingService.name')->label('Layanan Pengiriman'),
-                    TextEntry::make('price_per_kg')->label('Harga per Kg')->suffix(' Rp')->formatStateUsing(function ($state) {
+                    TextEntry::make('price_per_kg')->label('Harga per Kg')->formatStateUsing(function ($state) {
                         return 'Rp ' . number_format($state);
                     }),
-                    TextEntry::make('price_per_volume')->label('Harga per Volume (m³)')->suffix(' Rp')->formatStateUsing(function ($state) {
-                        return 'Rp ' . number_format($state);
-                    }),
-                    TextEntry::make('min_price')->label('Harga Minimal')->suffix(' Rp')->formatStateUsing(function ($state) {
-                        return 'Rp ' . number_format($state);
-                    }),
+                    // TextEntry::make('price_per_volume')->label('Harga per Volume (m³)')->suffix(' Rp')->formatStateUsing(function ($state) {
+                    //     return 'Rp ' . number_format($state);
+                    // }),
+                    // TextEntry::make('min_price')->label('Harga Minimal')->suffix(' Rp')->formatStateUsing(function ($state) {
+                    //     return 'Rp ' . number_format($state);
+                    // }),
                     TextEntry::make('estimation_days_min')->label('Estimasi Hari Min')->suffix(' Hari'),
                     TextEntry::make('estimation_days_max')->label('Estimasi Hari Max')->suffix(' Hari'),
                 ])->columns(2),

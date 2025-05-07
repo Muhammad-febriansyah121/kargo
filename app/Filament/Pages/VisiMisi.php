@@ -11,6 +11,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 
 class VisiMisi extends Page implements HasForms
 {
@@ -23,6 +24,14 @@ class VisiMisi extends Page implements HasForms
     protected static ?string $navigationGroup = 'Main Menu';
     protected static ?string $navigationLabel = 'Visi & Misi';
     protected static ?int $navigationSort = 3;
+
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
 
     public function mount(): void
     {

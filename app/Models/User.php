@@ -25,7 +25,7 @@ class User extends Authenticatable implements FilamentUser
     protected $guarded = [
         'id',
     ];
-    protected $with = ['city', 'warehouse'];
+    protected $with = ['city', 'warehouse', 'pesantren'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -53,7 +53,7 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         $user = Auth::user();
-        if ($panel->getId() === 'admin' && $user->role === 'admin') {
+        if ($panel->getId() === 'admin' && $user->role === 'admin' || $user->role === 'mitra') {
             return true;
         }
 
@@ -88,5 +88,10 @@ class User extends Authenticatable implements FilamentUser
     public function trackingHistory()
     {
         return $this->hasMany(TrackingHistory::class);
+    }
+
+    public function pesantren()
+    {
+        return $this->belongsTo(Pesantren::class);
     }
 }

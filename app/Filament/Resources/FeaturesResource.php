@@ -20,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 
 class FeaturesResource extends Resource
@@ -30,6 +31,15 @@ class FeaturesResource extends Resource
     protected static ?string $navigationGroup = 'Main Menu';
     protected static ?string $navigationLabel = 'Features';
     protected static ?int $navigationSort = 10;
+
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
+
 
     public static function form(Form $form): Form
     {

@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class DefinisiResource extends Resource
 {
@@ -24,6 +25,15 @@ class DefinisiResource extends Resource
     protected static ?string $navigationGroup = 'Main Menu';
     protected static ?string $navigationLabel = 'Definisi';
     protected static ?int $navigationSort = 6;
+
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
+
 
     public static function form(Form $form): Form
     {

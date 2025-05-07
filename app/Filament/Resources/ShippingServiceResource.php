@@ -7,6 +7,7 @@ use App\Filament\Resources\ShippingServiceResource\RelationManagers;
 use App\Models\ShippingService;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
@@ -18,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use Teguh02\IndonesiaTerritoryForms\IndonesiaTerritoryForms;
 
 class ShippingServiceResource extends Resource
@@ -29,6 +31,14 @@ class ShippingServiceResource extends Resource
     protected static ?string $navigationLabel = 'Layanan Pengiriman';
     protected static ?int $navigationSort = 1;
 
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -38,12 +48,15 @@ class ShippingServiceResource extends Resource
                     TextInput::make('price')->required()->placeholder('Harga')->prefix('Rp')->mask(RawJs::make('$money($input)'))
                         ->stripCharacters(',')
                         ->numeric(),
-                    Textarea::make('desc')->required()->placeholder('Deskripsi'),
-                    ToggleButtons::make('is_active')
-                        ->label('Status')
-                        ->boolean()
-                        ->grouped()
-                ])
+                    // TextInput::make('divisor')->required()->placeholder('Divisor')->prefix('Rp')->mask(RawJs::make('$money($input)'))
+                    //     ->stripCharacters(',')
+                    //     ->numeric(),
+                    Select::make("jenis_pengiriman")->options([
+                        "darat" => "darat",
+                        "udara" => "udara"
+                    ])->label('Jenis Pengiriman')->required()->columnSpan(['lg' => 2]),
+                    Textarea::make('desc')->required()->placeholder('Deskripsi')->columnSpan(['lg' => 2]),
+                ])->columns(2)
             ]);
     }
 

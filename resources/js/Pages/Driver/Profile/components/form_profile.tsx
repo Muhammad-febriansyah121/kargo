@@ -55,17 +55,18 @@ export default function FormProfileDriver({ city, user, warehouse }: Props) {
         useForm<ProfileFormData>({
             name: user.name ?? "",
             email: user.email ?? "",
-            password: "",
-            phone: user.phone ?? "",
-            store: "",
+            phone: user.phone ?? "", // sudah bisa string/number
+            store: user.store ?? "",
             city_id: user.city_id ? String(user.city_id) : "",
+            pesantren_id: user.pesantren_id ? String(user.pesantren_id) : "", // sebelumnya ini tidak ada
             address: user.address ?? "",
             gender: user.gender ?? "",
             vehicle_type: user.vehicle_type ?? "",
             vehicle_number: user.vehicle_number ?? "",
             warehouse_id: user.warehouse_id ? String(user.warehouse_id) : "",
-            role: user.role,
+            role: user.role ?? "", // kalau tidak perlu dikirim, bisa hapus saja
             image: null,
+            password: "", // karena opsional, Anda bisa set string kosong atau hapus jika tak perlu
         });
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

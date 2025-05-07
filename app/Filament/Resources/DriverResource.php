@@ -27,6 +27,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 
 class DriverResource extends Resource
@@ -37,6 +38,15 @@ class DriverResource extends Resource
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?string $navigationLabel = 'Driver/Supir';
     protected static ?int $navigationSort = 17;
+
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
+
 
     public static function form(Form $form): Form
     {
@@ -136,7 +146,7 @@ class DriverResource extends Resource
             ->schema([
                 ComponentsSection::make()->schema(
                     [
-                        TextEntry::make('name')->label('Kurir'),
+                        TextEntry::make('name')->label('Nama'),
                         TextEntry::make('email')->label('Email'),
                         TextEntry::make('phone')->label('Nomor Telepon'),
                         TextEntry::make('gender')->label('Jenis Kelamin'),

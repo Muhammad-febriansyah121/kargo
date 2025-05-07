@@ -12,12 +12,16 @@ export interface UserType {
     vehicle_type: null;
     vehicle_number: null;
     role: string;
-    image: string;
+    divisi: null;
+    image: null;
     created_at: Date;
     updated_at: Date;
-    warehouse_id: number;
+    warehouse_id: null;
+    pesantren_id: number;
+    author: number;
     city: City;
-    warehouse: Warehouse;
+    warehouse: null;
+    pesantren: Pesantren;
 }
 
 export interface City {
@@ -31,15 +35,13 @@ export interface City {
     updated_at: null;
 }
 
-export interface Warehouse {
+export interface Pesantren {
     id: number;
+    author: number;
     name: string;
-    city_id: number;
-    manager: string;
     address: string;
-    created_at: Date;
-    updated_at: Date;
-    city: City;
+    created_at: null;
+    updated_at: null;
 }
 
 // HANYA data yang perlu dikirim lewat form
@@ -49,6 +51,7 @@ export type ProfileFormData = {
     phone: number | string;
     address: string;
     city_id: string; // penting: hanya city_id, bukan object city
+    pesantren_id: string; // penting: hanya city_id, bukan object city
     store: string;
     gender: string;
     vehicle_type: string;

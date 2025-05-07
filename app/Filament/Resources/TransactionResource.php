@@ -33,6 +33,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class TransactionResource extends Resource
 {
@@ -41,7 +42,7 @@ class TransactionResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $navigationGroup = 'Master Data';
     protected static ?string $navigationLabel = 'Transaksi';
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 22;
 
     public static function canCreate(): bool
     {
@@ -116,6 +117,7 @@ class TransactionResource extends Resource
                         return match ($state) {
                             'order_baru' => 'warning',
                             'pickup' => 'info',
+                            'picked' => 'info',
                             'in_transit' => 'success',
                             'dikirim' => 'success',
                             'on_delivery' => 'success',
@@ -141,6 +143,9 @@ class TransactionResource extends Resource
                         'paid' => 'Paid',
                         'failed' => 'Failed',
                     ]),
+                SelectFilter::make('author')
+                    ->options(User::where('divisi', '!=', NULL)->pluck('name', 'id'))
+                    ->searchable(),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from')->native(false)
@@ -172,14 +177,29 @@ class TransactionResource extends Resource
                     }),
             ], layout: FiltersLayout::Modal)->actions([
                 Tables\Actions\ViewAction::make()->label('Detail')->icon('heroicon-s-eye')->button()->color('info'),
-                Action::make('printpdf')->button()->label('Print PDF')->icon('heroicon-s-printer')->color('danger')->url(fn($record) => route('customers.downloadBarcode', $record->invoice_number))->openUrlInNewTab(),
+                Action::make('printpdf')->button()->label('Print PDF')->icon('heroicon-s-printer')->color('danger')
+                    ->url(fn($record) => route('customers.downloadBarcode', $record->invoice_number))
+                    ->openUrlInNewTab(),
+                Action::make('teruskan')->button()->label('Teruskan')
+                    ->icon('heroicon-s-arrow-top-right-on-square')
+                    ->color('warning')->requiresConfirmation()
+                    ->visible(fn($record): bool => $record->shippingOrder->status === 'order_baru' && Auth::user()->role === "admin" && Auth::user()->divisi !== NULL && $record->shippingOrder->author_id === 0)
+                    ->action(function (Transaction $record) {
+                        $shippingOrder = ShippingOrder::where('tracking_number', $record->invoice_number)->first();
+                        $shippingOrder->author_id = $record->author;
+                        $shippingOrder->save();
+                        Notification::make()
+                            ->title('Data berhasil diteruskan!')
+                            ->success()
+                            ->send();
+                    }),
                 Action::make('ubahStatus')
                     ->requiresConfirmation()
                     ->button()
                     ->color('info')
                     ->label('Teruskan')
                     ->icon('heroicon-s-check-circle')
-                    ->visible(fn($record): bool => $record->shippingOrder->status === 'dikirim' || $record->shippingOrder->status === 'pengiriman_gudang')
+                    ->visible(fn($record): bool => $record->shippingOrder->status === 'dikirim' || $record->shippingOrder->status === 'pengiriman_gudang' && Auth::user()->role === "admin" && Auth::user()->divisi === NULL)
                     ->action(function (Transaction $record) {
                         $shippingOrder = ShippingOrder::where('tracking_number', $record->invoice_number)->first();
                         if ($shippingOrder->status == 'dikirim') {
@@ -243,7 +263,7 @@ class TransactionResource extends Resource
                             ->success()
                             ->send();
                     })
-                    ->visible(fn($record) => $record->ShippingOrder->pickup_courier_id === null && $record->ShippingOrder->pickup_type === 'pickup')
+                    ->visible(fn($record) => $record->ShippingOrder->pickup_courier_id === null && $record->ShippingOrder->pickup_type === 'pickup' && Auth::user()->role === "admin" && Auth::user()->divisi === NULL)
                     ->modalAlignment(Alignment::Center),
 
                 // Action::make('pilihDriver')
@@ -413,7 +433,8 @@ class TransactionResource extends Resource
                         TextEntry::make('user.name')->label('Nama'),
                         TextEntry::make('user.email')->label('Email'),
                         TextEntry::make('user.phone')->label('No Telepon'),
-                        TextEntry::make('user.store')->label('Toko'),
+                        TextEntry::make('user.store')->label('Toko')->visible(fn($record) => $record->user->role === 'customer'),
+                        TextEntry::make('user.pesantren.name')->label('Pesantren')->visible(fn($record) => $record->user->role === 'santri'),
                         TextEntry::make('user.gender')->label('Jenis Kelamin'),
                         TextEntry::make('user.city.kota')->label('Kota'),
                         TextEntry::make('user.address')->label('Alamat'),
@@ -427,6 +448,7 @@ class TransactionResource extends Resource
 
                 Section::make('Detail Pengiriman')
                     ->schema([
+                        TextEntry::make('ShippingOrder.shippingRate.shippingService.name')->label('Layanan Pengiriman'),
                         TextEntry::make('ShippingOrder.nama_barang')->label('Nama Barang'),
                         TextEntry::make('ShippingOrder.berat')->label('Berat')->suffix('Kg'),
                         TextEntry::make('ShippingOrder.panjang')->label('Panjang')->suffix('Cm'),
@@ -451,6 +473,7 @@ class TransactionResource extends Resource
                             return match ($state) {
                                 'order_baru' => 'warning',
                                 'pickup' => 'info',
+                                'picked' => 'info',
                                 'dropoff' => 'info',
                                 'dikirim' => 'info',
                                 'in_transit' => 'success',
@@ -462,7 +485,7 @@ class TransactionResource extends Resource
                                 'cancelled' => 'secondary',
                             };
                         }),
-                    ])->columnSpan(['lg' => 2, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
+                    ])->columnSpan(['lg' => 3, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
 
                 Section::make('Detail Pickup Kurir')
                     ->visible(fn($record) => $record->ShippingOrder->pickup_courier_id !== null && $record->ShippingOrder->pickup_type === 'pickup')
@@ -518,17 +541,59 @@ class TransactionResource extends Resource
                         TextEntry::make('ShippingOrder.pickupCourier.warehouse.address')->label('Alamat Gudang'),
                         TextEntry::make('ShippingOrder.pickupCourier.address')->label('Alamat'),
                     ])->columnSpan(['lg' => 2, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
+                Section::make('Detail Admin/Mitra')
+                    ->visible(fn($record) => $record->ShippingOrder->author_id !== 0)
+                    ->schema([
+                        TextEntry::make('ShippingOrder.author.name')->label('Nama'),
+                        TextEntry::make('ShippingOrder.author.divisi')
+                            ->label('Divisi')
+                            ->visible(function ($record) {
+                                $user = User::find($record->ShippingOrder->author_id);
+                                if ($user->divisi !== null) {
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            }),
+
+                        TextEntry::make('ShippingOrder.author.email')->label('Email'),
+                        TextEntry::make('ShippingOrder.author.phone')->label('Nomor Telepon'),
+                        TextEntry::make('ShippingOrder.author.gender')->label('Jenis Kelamin')->visible(function ($record) {
+                            $user = User::find($record->ShippingOrder->author_id);
+                            if ($user->role === "mitra") {
+                                return false;
+                            }
+                        }),
+                        TextEntry::make('ShippingOrder.author.city.provinsi')->label('Provinsi'),
+                        TextEntry::make('ShippingOrder.author.city.kota')->label('Kota'),
+                        TextEntry::make('ShippingOrder.author.city.kecamatan')->label('Kecamatan'),
+                        TextEntry::make('ShippingOrder.author.city.kelurahan')->label('Kelurahan'),
+                        TextEntry::make('ShippingOrder.author.city.postal_code')->label('Kode POS'),
+                        TextEntry::make('ShippingOrder.author.warehouse.name')->label('Gudang')->visible(function ($record) {
+                            $user = User::find($record->ShippingOrder->author_id);
+                            if ($user->role === "mitra") {
+                                return false;
+                            }
+                        }),
+                        TextEntry::make('ShippingOrder.author.warehouse.address')->label('Alamat Gudang')->visible(function ($record) {
+                            $user = User::find($record->ShippingOrder->author_id);
+                            if ($user->role === "mitra") {
+                                return false;
+                            }
+                        }),
+                        TextEntry::make('ShippingOrder.author.address')->label('Alamat'),
+                    ])->columnSpan(['lg' => 2, 'md' => 1, 'sm' => 1])->columns(['lg' => 2, 'md' => 1, 'sm' => 1]),
 
 
             ])->columns(1);
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        /** @var class-string<Model> $modelClass */
-        $modelClass = static::$model;
-        return (string) $modelClass::count();
-    }
+    // public static function getNavigationBadge(): ?string
+    // {
+    //     /** @var class-string<Model> $modelClass */
+    //     $modelClass = static::$model;
+    //     return (string) $modelClass::count();
+    // }
 
     public static function getRelations(): array
     {

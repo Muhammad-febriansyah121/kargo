@@ -13,6 +13,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 
 class SettingWebsite extends Page implements HasForms
@@ -30,6 +31,14 @@ class SettingWebsite extends Page implements HasForms
     protected static ?string $navigationGroup = 'Setting';
     protected static ?string $navigationLabel = 'Setting Website';
     protected static ?int $navigationSort = 100;
+
+    public static function canAccess(): bool
+    {
+        if (Auth::user()->role == 'admin' && Auth::user()->divisi === NULL) {
+            return true;
+        }
+        return false;
+    }
 
     public function mount(): void
     {

@@ -36,15 +36,25 @@ import { useForm } from "@inertiajs/react";
 import { Inertia } from "@inertiajs/inertia";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { PesantrenType } from "@/types/pesantre";
 
 interface Props {
     city: CityType[];
     user: UserType;
+    pesantren: PesantrenType[];
 }
-export default function FormProfile({ city, user }: Props) {
+export default function FormProfile({ city, user, pesantren }: Props) {
     const [open, setOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const selectedItem = city.find((item) => item.id === selectedId);
+    const [selectedPesantren, setSelectedPesantren] =
+        useState<PesantrenType | null>(null);
+    const [openPesantren, setOpenPesantren] = useState(false);
+
+    const [selectedPesantrenId, setSelectedPesantrenId] = useState<
+        number | null
+    >(user.pesantren_id || null);
+
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const { data, setData, post, progress, processing, reset, errors } =
@@ -55,12 +65,13 @@ export default function FormProfile({ city, user }: Props) {
             phone: user.phone ?? "",
             store: user.store ?? "",
             city_id: user.city_id ? String(user.city_id) : "",
+            pesantren_id: user.pesantren_id ? String(user.pesantren_id) : "",
             address: user.address ?? "",
             gender: user.gender ?? "",
-            vehicle_type: user.vehicle_type ?? "", // add this line
-            vehicle_number: user.vehicle_number ?? "", // add this line
+            vehicle_type: user.vehicle_type ?? "",
+            vehicle_number: user.vehicle_number ?? "",
             warehouse_id: user.warehouse_id ? String(user.warehouse_id) : "",
-            role: user.role, // add this line
+            role: user.role,
             image: null,
         });
 
@@ -107,6 +118,14 @@ export default function FormProfile({ city, user }: Props) {
             setSelectedId(user.city_id);
         }
     }, [user.city_id]);
+    useEffect(() => {
+        if (selectedPesantrenId) {
+            const pesantrenItem = pesantren.find(
+                (item) => item.id === selectedPesantrenId
+            );
+            setSelectedPesantren(pesantrenItem || null);
+        }
+    }, [selectedPesantrenId, pesantren]);
 
     return (
         <form
@@ -167,17 +186,90 @@ export default function FormProfile({ city, user }: Props) {
                             placeholder="Nomor Telepon / Whatsapp"
                         />
                     </div>
-                    <div className="grid w-full  items-center gap-2">
-                        <Label htmlFor="store">Store </Label>
-                        <Input
-                            type="text"
-                            id="store"
-                            name="store"
-                            onChange={(e) => setData("store", e.target.value)}
-                            value={data.store}
-                            placeholder="Nama Toko"
-                        />
-                    </div>
+                    {data.role === "customer" ? (
+                        <div className="grid w-full  items-center gap-2">
+                            <Label htmlFor="store">Store </Label>
+                            <Input
+                                type="text"
+                                id="store"
+                                name="store"
+                                onChange={(e) =>
+                                    setData("store", e.target.value)
+                                }
+                                value={data.store}
+                                placeholder="Nama Toko"
+                            />
+                        </div>
+                    ) : (
+                        <div className="grid w-full items-center gap-2">
+                            {/* Pesantren */}
+                            <Label htmlFor="pesantren">Pesantren</Label>
+                            <Popover
+                                open={openPesantren}
+                                onOpenChange={setOpenPesantren}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        className="w-full justify-between text-sm"
+                                    >
+                                        {selectedPesantren
+                                            ? `${selectedPesantren.name}  - ${selectedPesantren.address}`
+                                            : "Pilih Pesantren"}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="md:w-[500px] w-[300px] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Cari pesantren, kota, dll..." />
+                                        <CommandEmpty>
+                                            Tidak ditemukan
+                                        </CommandEmpty>
+                                        <CommandGroup>
+                                            <CommandList>
+                                                {pesantren.map((item) => (
+                                                    <CommandItem
+                                                        key={item.id}
+                                                        value={`${item.name}  ${item.address}`}
+                                                        onSelect={() => {
+                                                            setSelectedPesantrenId(
+                                                                item.id
+                                                            );
+                                                            setData(
+                                                                "pesantren_id",
+                                                                item.id.toString()
+                                                            );
+                                                            setOpenPesantren(
+                                                                false
+                                                            );
+                                                            setSelectedPesantren(
+                                                                item
+                                                            ); // Set selected pesantren
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                selectedPesantrenId ===
+                                                                    item.id
+                                                                    ? "opacity-100"
+                                                                    : "opacity-0"
+                                                            )}
+                                                        />
+                                                        <span className="line-clamp-2 max-w-[400px] block">
+                                                            {item.name} -{" "}
+                                                            {item.address}
+                                                        </span>
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandList>
+                                        </CommandGroup>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    )}
                     <div className="grid w-full  items-center gap-2">
                         <Label htmlFor="address">Jenis Kelamin </Label>
                         <Select

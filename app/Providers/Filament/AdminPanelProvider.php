@@ -55,7 +55,6 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
                 StatsOverview::class,
                 TrxChart::class,
-                // Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
